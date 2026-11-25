@@ -11,17 +11,22 @@
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
       const statusEl = document.getElementById('push-status');
+      function prikaziId(id) {
+        if (id) {
+          statusEl.textContent = "Obavijesti aktivne (ID: " + id.slice(0, 8) + "...)";
+          statusEl.style.color = "#4ade80";
+        }
+      }
       try {
         await OneSignal.init({
           appId: "b0d8dbcf-f719-4876-8bf5-6900a5fc082c",
           serviceWorkerParam: { scope: "/kvarner-vjetar/" },
           serviceWorkerPath: "/kvarner-vjetar/OneSignalSDKWorker.js",
         });
-        const id = OneSignal.User.PushSubscription.id;
-        if (id) {
-          statusEl.textContent = "Obavijesti aktivne (ID: " + id.slice(0, 8) + "...)";
-          statusEl.style.color = "#4ade80";
-        }
+        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+          prikaziId(event.current.id);
+        });
+        prikaziId(OneSignal.User.PushSubscription.id);
       } catch (e) {
         statusEl.textContent = "Greška init: " + e.message;
         statusEl.style.color = "#f87171";
@@ -35,16 +40,18 @@
         try {
           await OneSignal.Notifications.requestPermission();
           await OneSignal.User.PushSubscription.optIn();
-          setTimeout(() => {
+          setTimeout(async () => {
             const id = OneSignal.User.PushSubscription.id;
             if (id) {
               statusEl.textContent = "Uspješno prijavljeno! (ID: " + id.slice(0, 8) + "...)";
               statusEl.style.color = "#4ade80";
             } else {
-              statusEl.textContent = "Dozvola: " + Notification.permission + " (nema ID-a)";
+              const regs = await navigator.serviceWorker.getRegistrations();
+              const swInfo = regs.length ? "SW aktivan (" + regs.length + ")" : "SW nije registriran";
+              statusEl.textContent = "Nema ID-a | " + swInfo + " | Dozvola: " + Notification.permission;
               statusEl.style.color = "#facc15";
             }
-          }, 1500);
+          }, 4000);
         } catch (e) {
           statusEl.textContent = "Greška: " + e.message;
           statusEl.style.color = "#f87171";
