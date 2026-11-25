@@ -2,7 +2,7 @@ name: Preluk provjera svakih 6h
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 10,16,21 * * *'
   workflow_dispatch:
 
 permissions:
