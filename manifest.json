@@ -1,0 +1,9 @@
+{
+  "name": "Preluk Vjetar",
+  "short_name": "Preluk",
+  "start_url": "/kvarner-vjetar/",
+  "scope": "/kvarner-vjetar/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a"
+}
