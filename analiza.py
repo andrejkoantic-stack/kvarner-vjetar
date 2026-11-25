@@ -17,14 +17,12 @@ def pronadji_bazu_slika():
     r.raise_for_status()
     puni = re.findall(r'https?://[^\s"\'<>\\]+web_uv10_SENJ[^\s"\'<>\\]*\.(?:gif|png|jpg)', r.text, re.IGNORECASE)
 
-    # Iz pronađenog prvog linka izvuci bazu i generiraj sve 24 slike (03 do 72h)
     if puni:
         m = re.match(r'^(https?://.+?_)\d{2}\.(gif|png|jpg)$', puni[0], re.IGNORECASE)
         if m:
             baza, ext = m.group(1), m.group(2)
             return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
 
-    # Rezervna varijanta ako format naziva bude drugačiji
     for baza in ("https://prognoza.hr/aladinHR/web_uv10_SENJ_", "https://meteo.hr/aladinHR/web_uv10_SENJ_"):
         for ext in ("gif", "png"):
             resp = requests.head(f"{baza}03.{ext}", headers=HEADERS, timeout=10, allow_redirects=True)
@@ -37,7 +35,7 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
     w, h = img.size
 
-    # Uski izrez oko natpisa "Opa" / Preluk
+    # Centrirani izrez točno oko "Opa" / Preluk
     crop_box = (int(w * 0.48), int(h * 0.33), int(w * 0.60), int(h * 0.45))
     zona = img.crop(crop_box)
     if spremi_kao:
@@ -46,24 +44,46 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
     arr = np.array(zona)
     hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
 
+    # 1. Udio obojene površine (jačina/prisutnost vjetra)
     maska_boje = (hsv[:, :, 1] > 55) & (hsv[:, :, 2] > 75)
     udio_vjetra = float(np.mean(maska_boje) * 100)
 
+    # 2. Detekcija pojedinačnih crnih strelica (vrh dolje = sjever/bura, vrh gore = jug/jugo)
     sivo = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
-    gx = cv2.Sobel(sivo, cv2.CV_64F, 1, 0, ksize=3)
-    gy = cv2.Sobel(sivo, cv2.CV_64F, 0, 1, ksize=3)
-    mag = np.sqrt(gx**2 + gy**2)
-    kut = (np.degrees(np.arctan2(gy, gx)) + 180) % 180
+    crno = (sivo < 85).astype(np.uint8)
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crno, connectivity=8)
 
-    jaki_rubovi = mag > 60
-    if np.sum(jaki_rubovi) > 0:
-        sjever_jug = ((kut < 30) | (kut > 150)) & jaki_rubovi
-        udio_smjera = float(np.sum(sjever_jug) / np.sum(jaki_rubovi) * 100)
-    else:
-        udio_smjera = 0.0
+    strelice_sjever = 0
+    strelice_jug = 0
 
-    povoljno = (udio_vjetra >= 12.0) and (udio_smjera >= 35.0)
-    return povoljno, round(udio_vjetra, 1), round(udio_smjera, 1)
+    for i in range(1, num_labels):
+        x = stats[i, cv2.CC_STAT_LEFT]
+        y = stats[i, cv2.CC_STAT_TOP]
+        bw = stats[i, cv2.CC_STAT_WIDTH]
+        bh = stats[i, cv2.CC_STAT_HEIGHT]
+        area = stats[i, cv2.CC_STAT_AREA]
+
+        # Filtriraj sitan šum, ogromne linije i čisto vodoravne objekte
+        if area < 12 or area > 220 or bh < 6:
+            continue
+
+        objekt = (labels[y:y+bh, x:x+bw] == i)
+        polovica = bh // 2
+        gornja_masa = int(np.sum(objekt[:polovica, :]))
+        donja_masa = int(np.sum(objekt[bh - polovica:, :]))
+
+        # Vrh strelice (perca) ima više crnih piksela nego rep
+        if donja_masa > gornja_masa * 1.15:
+            strelice_sjever += 1
+        elif gornja_masa > donja_masa * 1.15:
+            strelice_jug += 1
+
+    ukupno = strelice_sjever + strelice_jug
+    udio_sjever = (strelice_sjever / ukupno * 100) if ukupno > 0 else 0.0
+
+    # Povoljno: ima vjetra, barem 3 strelice prema dolje i >= 60% udio sjevera/bure
+    povoljno = (udio_vjetra >= 12.0) and (strelice_sjever >= 3) and (udio_sjever >= 60.0)
+    return povoljno, round(udio_vjetra, 1), round(udio_sjever, 1)
 
 def posalji_obavijest(naslov, tekst):
     try:
