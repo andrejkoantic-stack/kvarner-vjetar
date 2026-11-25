@@ -2,8 +2,8 @@ name: Preluk provjera svakih 6h
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Svakih 6 sati
-  workflow_dispatch:       # Ručno pokretanje za test
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -24,12 +24,15 @@ jobs:
         run: pip install requests pillow numpy opencv-python-headless
 
       - name: Pokreni analizu za Preluk
-        run: python analiza.py
+        run: |
+          python analiza.py
+          cat status.json
 
       - name: Spremi rezultate natrag na GitHub
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add status.json dan1.png dan2.png dan3.png || true
+          git add status.json
+          git add dan*.png 2>/dev/null || true
           git diff --staged --quiet || git commit -m "Ažuriranje Preluk 3 dana"
           git push
