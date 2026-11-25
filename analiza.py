@@ -13,23 +13,21 @@ NTFY_KANAL = "preluk-vjetar-andrej-99"
 DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"]
 
 def pronadji_bazu_slika():
-    # 1. Pokušaj naći točan puni URL slike u HTML-u stranice
     r = requests.get(URL, headers=HEADERS, timeout=20)
     r.raise_for_status()
     puni = re.findall(r'https?://[^\s"\'<>\\]+web_uv10_SENJ[^\s"\'<>\\]*\.(?:gif|png|jpg)', r.text, re.IGNORECASE)
-    if puni:
-        return list(dict.fromkeys(puni))
 
-    # 2. Ako su putanje skrivene u JavaScriptu, isprobaj poznate DHMZ putanje za ALADIN
-    kandidati_baze = [
-        "https://prognoza.hr/aladinHR/web_uv10_SENJ_",
-        "https://meteo.hr/aladinHR/web_uv10_SENJ_",
-        "https://meteo.hr/data/aladinHR/web_uv10_SENJ_",
-    ]
-    for baza in kandidati_baze:
+    # Iz pronađenog prvog linka izvuci bazu i generiraj sve 24 slike (03 do 72h)
+    if puni:
+        m = re.match(r'^(https?://.+?_)\d{2}\.(gif|png|jpg)$', puni[0], re.IGNORECASE)
+        if m:
+            baza, ext = m.group(1), m.group(2)
+            return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
+
+    # Rezervna varijanta ako format naziva bude drugačiji
+    for baza in ("https://prognoza.hr/aladinHR/web_uv10_SENJ_", "https://meteo.hr/aladinHR/web_uv10_SENJ_"):
         for ext in ("gif", "png"):
-            test_url = f"{baza}03.{ext}"
-            resp = requests.head(test_url, headers=HEADERS, timeout=10, allow_redirects=True)
+            resp = requests.head(f"{baza}03.{ext}", headers=HEADERS, timeout=10, allow_redirects=True)
             if resp.status_code == 200:
                 return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
 
@@ -94,7 +92,7 @@ def main():
     try:
         slike = pronadji_bazu_slika()
         if not slike:
-            raise ValueError("Nijedna poznata DHMZ adresa za ALADIN slike nije vratila 200 OK.")
+            raise ValueError("Nisu pronađene ALADIN slike.")
 
         for idx_dan, datum in enumerate(ciljani_dani, start=1):
             ime_dana = DANI_HR[datum.weekday()]
