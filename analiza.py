@@ -12,29 +12,28 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 NTFY_KANAL = "preluk-vjetar-andrej-99"
 DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"]
 
-def normaliziraj_url(u):
-    if u.startswith("http"):
-        return u
-    if u.startswith("//"):
-        return "https:" + u
-    return "https://meteo.hr/" + u.lstrip("/")
-
-def dohvati_slike():
+def pronadji_bazu_slika():
+    # 1. Pokušaj naći točan puni URL slike u HTML-u stranice
     r = requests.get(URL, headers=HEADERS, timeout=20)
     r.raise_for_status()
-    tekst = r.text
+    puni = re.findall(r'https?://[^\s"\'<>\\]+web_uv10_SENJ[^\s"\'<>\\]*\.(?:gif|png|jpg)', r.text, re.IGNORECASE)
+    if puni:
+        return list(dict.fromkeys(puni))
 
-    # Šira pretraga: bilo koji link na sliku koji sadrži SENJ ili uv10
-    uzorci = re.findall(r'[^\s"\'<>\\]*(?:SENJ|uv10)[^\s"\'<>\\]*\.(?:gif|png|jpg)', tekst, re.IGNORECASE)
-    slike = list(dict.fromkeys([normaliziraj_url(u) for u in uzorci]))
+    # 2. Ako su putanje skrivene u JavaScriptu, isprobaj poznate DHMZ putanje za ALADIN
+    kandidati_baze = [
+        "https://prognoza.hr/aladinHR/web_uv10_SENJ_",
+        "https://meteo.hr/aladinHR/web_uv10_SENJ_",
+        "https://meteo.hr/data/aladinHR/web_uv10_SENJ_",
+    ]
+    for baza in kandidati_baze:
+        for ext in ("gif", "png"):
+            test_url = f"{baza}03.{ext}"
+            resp = requests.head(test_url, headers=HEADERS, timeout=10, allow_redirects=True)
+            if resp.status_code == 200:
+                return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
 
-    # Ako i dalje ništa ne nađe, spremi prvih 5 pronađenih slika sa stranice za dijagnostiku
-    debug = []
-    if not slike:
-        sve_slike = re.findall(r'[^\s"\'<>\\]+\.(?:gif|png|jpg)', tekst, re.IGNORECASE)
-        debug = list(dict.fromkeys(sve_slike))[:10]
-
-    return slike, debug
+    return []
 
 def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
@@ -93,12 +92,15 @@ def main():
     rezultati_dana = []
 
     try:
-        slike, debug = dohvati_slike()
+        slike = pronadji_bazu_slika()
+        if not slike:
+            raise ValueError("Nijedna poznata DHMZ adresa za ALADIN slike nije vratila 200 OK.")
+
         for idx_dan, datum in enumerate(ciljani_dani, start=1):
             ime_dana = DANI_HR[datum.weekday()]
             jutarnje_slike = []
 
-            for i, url_slike in enumerate(slike):
+            for i, url_slike in enumerate(slike, start=1):
                 termin = start_modela + timedelta(hours=i * 3)
                 if termin.date() == datum and 6 <= termin.hour <= 10:
                     jutarnje_slike.append((termin, url_slike))
@@ -107,12 +109,16 @@ def main():
             max_vjetar = 0.0
             max_smjer = 0.0
             slika_datoteka = f"dan{idx_dan}.png"
+            spremljena_slika = ""
 
             for j, (termin, url_slike) in enumerate(jutarnje_slike):
                 img_r = requests.get(url_slike, headers=HEADERS, timeout=20)
-                img_r.raise_for_status()
-                spremi = slika_datoteka if j == 0 else None
+                if img_r.status_code != 200:
+                    continue
+                spremi = slika_datoteka if not spremljena_slika else None
                 pov, vj, sm = analiziraj_zonu_opa(img_r.content, spremi_kao=spremi)
+                if spremi:
+                    spremljena_slika = slika_datoteka
                 if pov:
                     dan_povoljan = True
                 max_vjetar = max(max_vjetar, vj)
@@ -126,7 +132,7 @@ def main():
                 "status_tekst": status_tekst,
                 "vjetar_posto": max_vjetar,
                 "smjer_posto": max_smjer,
-                "slika": slika_datoteka if jutarnje_slike else ""
+                "slika": spremljena_slika
             })
 
         sazetak = ", ".join([f"Preluk {d['dan']} {d['status_tekst']}" for d in rezultati_dana])
@@ -138,7 +144,7 @@ def main():
         izlaz = {
             "azurirano": sada.strftime("%d.%m.%Y. %H:%M"),
             "pronadjeno_slika": len(slike),
-            "debug_linkovi": debug,
+            "primjer_url": slike[0],
             "naslov": naslov,
             "sazetak": sazetak,
             "dani": rezultati_dana
