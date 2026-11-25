@@ -9,27 +9,38 @@ import cv2
 
 URL = "https://meteo.hr/prognoze.php?section=prognoze_model&param=ala_k&el=web_uv10_SENJ_P"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-
-# OVDJE UPIŠI SVOJE TAJNO IME KANALA ZA OBAVIJESTI (isto upišeš u aplikaciju ntfy na iPhoneu)
 NTFY_KANAL = "preluk-vjetar-andrej-99"
-
 DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"]
+
+def normaliziraj_url(u):
+    if u.startswith("http"):
+        return u
+    if u.startswith("//"):
+        return "https:" + u
+    return "https://meteo.hr/" + u.lstrip("/")
 
 def dohvati_slike():
     r = requests.get(URL, headers=HEADERS, timeout=20)
     r.raise_for_status()
-    uzorci = re.findall(r'https?://[^\s"\'<>]+web_uv10_SENJ[^\s"\'<>]+\.(?:gif|png|jpg)', r.text)
-    if not uzorci:
-        rel = re.findall(r'[^\s"\'<>]*aladin[^\s"\'<>]*web_uv10_SENJ[^\s"\'<>]+\.(?:gif|png|jpg)', r.text)
-        uzorci = ["https://meteo.hr/" + u.lstrip("/") if not u.startswith("http") else u for u in rel]
-    return list(dict.fromkeys(uzorci))
+    tekst = r.text
+
+    # Šira pretraga: bilo koji link na sliku koji sadrži SENJ ili uv10
+    uzorci = re.findall(r'[^\s"\'<>\\]*(?:SENJ|uv10)[^\s"\'<>\\]*\.(?:gif|png|jpg)', tekst, re.IGNORECASE)
+    slike = list(dict.fromkeys([normaliziraj_url(u) for u in uzorci]))
+
+    # Ako i dalje ništa ne nađe, spremi prvih 5 pronađenih slika sa stranice za dijagnostiku
+    debug = []
+    if not slike:
+        sve_slike = re.findall(r'[^\s"\'<>\\]+\.(?:gif|png|jpg)', tekst, re.IGNORECASE)
+        debug = list(dict.fromkeys(sve_slike))[:10]
+
+    return slike, debug
 
 def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
     w, h = img.size
 
-    # Uski izrez točno oko natpisa "Opa" / Preluk (cca 7-8 najbližih strelica)
-    # Koordinate u postocima slike: (lijevo, gore, desno, dolje)
+    # Uski izrez oko natpisa "Opa" / Preluk
     crop_box = (int(w * 0.48), int(h * 0.28), int(w * 0.60), int(h * 0.40))
     zona = img.crop(crop_box)
     if spremi_kao:
@@ -38,11 +49,9 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
     arr = np.array(zona)
     hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
 
-    # 1. Ima li vjetra (obojeni pikseli sa skale brzine)
     maska_boje = (hsv[:, :, 1] > 55) & (hsv[:, :, 2] > 75)
     udio_vjetra = float(np.mean(maska_boje) * 100)
 
-    # 2. Orijentacija strelica (generalni smjer sjevera -> okomite linije S-J)
     sivo = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
     gx = cv2.Sobel(sivo, cv2.CV_64F, 1, 0, ksize=3)
     gy = cv2.Sobel(sivo, cv2.CV_64F, 0, 1, ksize=3)
@@ -51,7 +60,6 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
 
     jaki_rubovi = mag > 60
     if np.sum(jaki_rubovi) > 0:
-        # Raspon za generalni sjeverni smjer (N, NNE, NNW)
         sjever_jug = ((kut < 30) | (kut > 150)) & jaki_rubovi
         udio_smjera = float(np.sum(sjever_jug) / np.sum(jaki_rubovi) * 100)
     else:
@@ -72,8 +80,7 @@ def posalji_obavijest(naslov, tekst):
         print("Greška slanja obavijesti:", e)
 
 def main():
-    sada = datetime.now(timezone(timedelta(hours=1)))  # CET (Hrvatska)
-    # ALADIN-HR20 starta u 01:00 ili 13:00 po zimskom vremenu, korak je 3 sata
+    sada = datetime.now(timezone(timedelta(hours=1)))
     start_sat = 1 if sada.hour < 14 else 13
     start_modela = sada.replace(hour=start_sat, minute=0, second=0, microsecond=0)
 
@@ -86,7 +93,7 @@ def main():
     rezultati_dana = []
 
     try:
-        slike = dohvati_slike()
+        slike, debug = dohvati_slike()
         for idx_dan, datum in enumerate(ciljani_dani, start=1):
             ime_dana = DANI_HR[datum.weekday()]
             jutarnje_slike = []
@@ -96,7 +103,6 @@ def main():
                 if termin.date() == datum and 6 <= termin.hour <= 10:
                     jutarnje_slike.append((termin, url_slike))
 
-            # Ako model još nema 3. dan do kraja, uzmi najbližu dostupnu sliku
             dan_povoljan = False
             max_vjetar = 0.0
             max_smjer = 0.0
@@ -131,6 +137,8 @@ def main():
 
         izlaz = {
             "azurirano": sada.strftime("%d.%m.%Y. %H:%M"),
+            "pronadjeno_slika": len(slike),
+            "debug_linkovi": debug,
             "naslov": naslov,
             "sazetak": sazetak,
             "dani": rezultati_dana
@@ -139,6 +147,7 @@ def main():
     except Exception as e:
         izlaz = {
             "azurirano": sada.strftime("%d.%m.%Y. %H:%M"),
+            "pronadjeno_slika": 0,
             "naslov": "Greška pri dohvatu",
             "sazetak": str(e),
             "dani": []
