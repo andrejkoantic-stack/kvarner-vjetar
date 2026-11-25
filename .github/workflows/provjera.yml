@@ -1,4 +1,4 @@
-name: Preluk provjera svakih 6h
+name: Preluk provjera (11, 17, 22h)
 
 on:
   schedule:
@@ -24,6 +24,8 @@ jobs:
         run: pip install requests pillow numpy opencv-python-headless
 
       - name: Pokreni analizu za Preluk
+        env:
+          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
         run: |
           python analiza.py
           cat status.json
