@@ -18,17 +18,20 @@
         }
       }
       try {
+        await navigator.serviceWorker.register("/kvarner-vjetar/OneSignalSDKWorker.js", {
+          scope: "/kvarner-vjetar/"
+        });
         await OneSignal.init({
           appId: "b0d8dbcf-f719-4876-8bf5-6900a5fc082c",
           serviceWorkerParam: { scope: "/kvarner-vjetar/" },
-          serviceWorkerPath: "/kvarner-vjetar/OneSignalSDKWorker.js",
+          serviceWorkerPath: "kvarner-vjetar/OneSignalSDKWorker.js",
         });
         OneSignal.User.PushSubscription.addEventListener("change", (event) => {
           prikaziId(event.current.id);
         });
         prikaziId(OneSignal.User.PushSubscription.id);
       } catch (e) {
-        statusEl.textContent = "Greška init: " + e.message;
+        statusEl.textContent = "Greška SW/init: " + e.message;
         statusEl.style.color = "#f87171";
       }
     });
