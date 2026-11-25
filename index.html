@@ -10,15 +10,45 @@
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "b0d8dbcf-f719-4876-8bf5-6900a5fc082c",
-        serviceWorkerParam: { scope: "/kvarner-vjetar/" },
-        serviceWorkerPath: "kvarner-vjetar/OneSignalSDKWorker.js",
-      });
+      const statusEl = document.getElementById('push-status');
+      try {
+        await OneSignal.init({
+          appId: "b0d8dbcf-f719-4876-8bf5-6900a5fc082c",
+          serviceWorkerParam: { scope: "/kvarner-vjetar/" },
+          serviceWorkerPath: "/kvarner-vjetar/OneSignalSDKWorker.js",
+        });
+        const id = OneSignal.User.PushSubscription.id;
+        if (id) {
+          statusEl.textContent = "Obavijesti aktivne (ID: " + id.slice(0, 8) + "...)";
+          statusEl.style.color = "#4ade80";
+        }
+      } catch (e) {
+        statusEl.textContent = "Greška init: " + e.message;
+        statusEl.style.color = "#f87171";
+      }
     });
+
     function ukljuciObavijesti() {
+      const statusEl = document.getElementById('push-status');
+      statusEl.textContent = "Prijavljivanje...";
       window.OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.Notifications.requestPermission();
+        try {
+          await OneSignal.Notifications.requestPermission();
+          await OneSignal.User.PushSubscription.optIn();
+          setTimeout(() => {
+            const id = OneSignal.User.PushSubscription.id;
+            if (id) {
+              statusEl.textContent = "Uspješno prijavljeno! (ID: " + id.slice(0, 8) + "...)";
+              statusEl.style.color = "#4ade80";
+            } else {
+              statusEl.textContent = "Dozvola: " + Notification.permission + " (nema ID-a)";
+              statusEl.style.color = "#facc15";
+            }
+          }, 1500);
+        } catch (e) {
+          statusEl.textContent = "Greška: " + e.message;
+          statusEl.style.color = "#f87171";
+        }
       });
     }
   </script>
@@ -26,7 +56,8 @@
     body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 16px; }
     .okvir { max-width: 440px; margin: 0 auto; }
     h2 { text-align: center; margin-bottom: 6px; }
-    .gumb { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-bottom: 14px; cursor: pointer; }
+    .gumb { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-bottom: 6px; cursor: pointer; }
+    #push-status { text-align: center; font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; min-height: 18px; }
     .sazetak { background: #1e293b; padding: 14px; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 16px; border: 1px solid #334155; }
     .dan { background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
     .zaglavlje { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -42,6 +73,7 @@
   <div class="okvir">
     <h2>Preluk – 3 dana (06–10h)</h2>
     <button class="gumb" onclick="ukljuciObavijesti()">Uključi Push obavijesti</button>
+    <div id="push-status"></div>
     <div id="sazetak" class="sazetak">Učitavanje...</div>
     <div id="lista"></div>
     <div id="vrijeme" class="meta"></div>
