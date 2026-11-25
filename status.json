@@ -1,36 +1,36 @@
 {
-  "azurirano": "25.11.2026. 21:05",
-  "pronadjeno_slika": 1,
-  "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_P00.png",
-  "naslov": "Preluk prognoza (3 dana)",
-  "sazetak": "Preluk četvrtak nepovoljno, Preluk petak nepovoljno, Preluk subota nepovoljno",
+  "azurirano": "25.11.2026. 21:08",
+  "pronadjeno_slika": 24,
+  "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_03.png",
+  "naslov": "Moguće povoljno vrijeme za surfanje",
+  "sazetak": "Preluk četvrtak povoljno, Preluk petak nepovoljno, Preluk subota povoljno",
   "dani": [
     {
       "dan": "četvrtak",
       "datum": "26.11.2026.",
-      "povoljno": false,
-      "status_tekst": "nepovoljno",
-      "vjetar_posto": 0.0,
-      "smjer_posto": 0.0,
-      "slika": ""
+      "povoljno": true,
+      "status_tekst": "povoljno",
+      "vjetar_posto": 56.1,
+      "smjer_posto": 42.8,
+      "slika": "dan1.png"
     },
     {
       "dan": "petak",
       "datum": "27.11.2026.",
       "povoljno": false,
       "status_tekst": "nepovoljno",
-      "vjetar_posto": 0.0,
-      "smjer_posto": 0.0,
-      "slika": ""
+      "vjetar_posto": 10.8,
+      "smjer_posto": 32.1,
+      "slika": "dan2.png"
     },
     {
       "dan": "subota",
       "datum": "28.11.2026.",
-      "povoljno": false,
-      "status_tekst": "nepovoljno",
-      "vjetar_posto": 0.0,
-      "smjer_posto": 0.0,
-      "slika": ""
+      "povoljno": true,
+      "status_tekst": "povoljno",
+      "vjetar_posto": 59.6,
+      "smjer_posto": 35.9,
+      "slika": "dan3.png"
     }
   ]
 }
