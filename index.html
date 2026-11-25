@@ -15,7 +15,8 @@
     .bedz { padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; }
     .da { background: #16a34a; color: white; }
     .ne { background: #dc2626; color: white; }
-    img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 8px; }
+    .oznaka { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; }
+    img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; }
     .meta { color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 10px; }
   </style>
 </head>
@@ -36,14 +37,17 @@
         lista.innerHTML = '';
         (d.dani || []).forEach(dan => {
           const klasa = dan.povoljno ? 'da' : 'ne';
+          const t = Date.now();
           lista.innerHTML += `
             <div class="dan">
               <div class="zaglavlje">
                 <strong>Preluk ${dan.dan} (${dan.datum})</strong>
                 <span class="bedz ${klasa}">${dan.status_tekst.toUpperCase()}</span>
               </div>
-              <div style="font-size:0.85rem;color:#94a3b8;">Vjetar: ${dan.vjetar_posto}% | Smjer S: ${dan.smjer_posto}%</div>
-              ${dan.slika ? `<img src="${dan.slika}?t=${Date.now()}" alt="Zona Opa">` : ''}
+              <div class="oznaka">Lokalno (Opa): Vjetar ${dan.vjetar_posto}% | Smjer S: ${dan.smjer_posto}%</div>
+              ${dan.slika ? `<img src="${dan.slika}?t=${t}" alt="Lokalno Opa">` : ''}
+              <div class="oznaka">Šire (Kvarner): Vjetar ${dan.vjetar_siroko ?? 0}% | Smjer S: ${dan.smjer_siroko ?? 0}%</div>
+              ${dan.slika_siroko ? `<img src="${dan.slika_siroko}?t=${t}" alt="Šire Kvarner">` : ''}
             </div>`;
         });
       })
