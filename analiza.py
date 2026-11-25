@@ -38,7 +38,7 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
     w, h = img.size
 
     # Uski izrez oko natpisa "Opa" / Preluk
-    crop_box = (int(w * 0.48), int(h * 0.28), int(w * 0.60), int(h * 0.40))
+    crop_box = (int(w * 0.48), int(h * 0.33), int(w * 0.60), int(h * 0.45))
     zona = img.crop(crop_box)
     if spremi_kao:
         zona.save(spremi_kao)
