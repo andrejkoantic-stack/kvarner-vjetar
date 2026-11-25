@@ -1,5 +1,5 @@
 {
-  "azurirano": "25.11.2026. 21:30",
+  "azurirano": "25.11.2026. 21:47",
   "pronadjeno_slika": 24,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_03.png",
   "naslov": "Moguće povoljno vrijeme za surfanje",
@@ -12,7 +12,10 @@
       "status_tekst": "nepovoljno",
       "vjetar_posto": 61.7,
       "smjer_posto": 33.3,
-      "slika": "dan1.png"
+      "vjetar_siroko": 64.8,
+      "smjer_siroko": 12.8,
+      "slika": "dan1.png",
+      "slika_siroko": "dan1_siroko.png"
     },
     {
       "dan": "petak",
@@ -21,7 +24,10 @@
       "status_tekst": "povoljno",
       "vjetar_posto": 26.4,
       "smjer_posto": 90.0,
-      "slika": "dan2.png"
+      "vjetar_siroko": 61.4,
+      "smjer_siroko": 88.0,
+      "slika": "dan2.png",
+      "slika_siroko": "dan2_siroko.png"
     },
     {
       "dan": "subota",
@@ -30,7 +36,10 @@
       "status_tekst": "povoljno",
       "vjetar_posto": 69.4,
       "smjer_posto": 91.3,
-      "slika": "dan3.png"
+      "vjetar_siroko": 79.9,
+      "smjer_siroko": 93.2,
+      "slika": "dan3.png",
+      "slika_siroko": "dan3_siroko.png"
     }
   ]
 }
