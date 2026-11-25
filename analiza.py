@@ -31,24 +31,19 @@ def pronadji_bazu_slika():
 
     return []
 
-def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
-    img = Image.open(BytesIO(img_bytes)).convert("RGB")
+def izracunaj_zonu(img, crop_rel, min_strelica, spremi_kao=None):
     w, h = img.size
-
-    # Centrirani izrez točno oko "Opa" / Preluk
-    crop_box = (int(w * 0.48), int(h * 0.33), int(w * 0.60), int(h * 0.45))
-    zona = img.crop(crop_box)
+    x1, y1, x2, y2 = crop_rel
+    zona = img.crop((int(w * x1), int(h * y1), int(w * x2), int(h * y2)))
     if spremi_kao:
         zona.save(spremi_kao)
 
     arr = np.array(zona)
     hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
 
-    # 1. Udio obojene površine (jačina/prisutnost vjetra)
     maska_boje = (hsv[:, :, 1] > 55) & (hsv[:, :, 2] > 75)
     udio_vjetra = float(np.mean(maska_boje) * 100)
 
-    # 2. Detekcija pojedinačnih crnih strelica (vrh dolje = sjever/bura, vrh gore = jug/jugo)
     sivo = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
     crno = (sivo < 85).astype(np.uint8)
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crno, connectivity=8)
@@ -63,7 +58,6 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
         bh = stats[i, cv2.CC_STAT_HEIGHT]
         area = stats[i, cv2.CC_STAT_AREA]
 
-        # Filtriraj sitan šum, ogromne linije i čisto vodoravne objekte
         if area < 12 or area > 220 or bh < 6:
             continue
 
@@ -72,7 +66,6 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
         gornja_masa = int(np.sum(objekt[:polovica, :]))
         donja_masa = int(np.sum(objekt[bh - polovica:, :]))
 
-        # Vrh strelice (perca) ima više crnih piksela nego rep
         if donja_masa > gornja_masa * 1.15:
             strelice_sjever += 1
         elif gornja_masa > donja_masa * 1.15:
@@ -80,10 +73,26 @@ def analiziraj_zonu_opa(img_bytes, spremi_kao=None):
 
     ukupno = strelice_sjever + strelice_jug
     udio_sjever = (strelice_sjever / ukupno * 100) if ukupno > 0 else 0.0
+    smjer_ok = (strelice_sjever >= min_strelica) and (udio_sjever >= 60.0)
 
-    # Povoljno: ima vjetra, barem 3 strelice prema dolje i >= 60% udio sjevera/bure
-    povoljno = (udio_vjetra >= 12.0) and (strelice_sjever >= 3) and (udio_sjever >= 60.0)
-    return povoljno, round(udio_vjetra, 1), round(udio_sjever, 1)
+    return smjer_ok, round(udio_vjetra, 1), round(udio_sjever, 1)
+
+def analiziraj_obje_zone(img_bytes, spremi_malu=None, spremi_veliku=None):
+    img = Image.open(BytesIO(img_bytes)).convert("RGB")
+
+    # 1. Mala lokalna zona (Opa / Preluk)
+    ok_lok, vj_lok, sm_lok = izracunaj_zonu(
+        img, (0.48, 0.33, 0.60, 0.45), min_strelica=3, spremi_kao=spremi_malu
+    )
+
+    # 2. Velika šira zona (Kvarner: Učka, Opa, RI, Labin, Cres, Krk)
+    ok_sir, vj_sir, sm_sir = izracunaj_zonu(
+        img, (0.38, 0.28, 0.68, 0.68), min_strelica=5, spremi_kao=spremi_veliku
+    )
+
+    # Povoljno samo ako ima vjetra i OBJE zone pokazuju sjeverni smjer
+    povoljno = (vj_lok >= 12.0) and ok_lok and ok_sir
+    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir
 
 def posalji_obavijest(naslov, tekst):
     try:
@@ -124,23 +133,31 @@ def main():
                     jutarnje_slike.append((termin, url_slike))
 
             dan_povoljan = False
-            max_vjetar = 0.0
-            max_smjer = 0.0
-            slika_datoteka = f"dan{idx_dan}.png"
-            spremljena_slika = ""
+            max_vj_lok = max_sm_lok = 0.0
+            max_vj_sir = max_sm_sir = 0.0
+            mala_dat = f"dan{idx_dan}.png"
+            velika_dat = f"dan{idx_dan}_siroko.png"
+            spremljena_mala = ""
+            spremljena_velika = ""
 
-            for j, (termin, url_slike) in enumerate(jutarnje_slike):
+            for termin, url_slike in jutarnje_slike:
                 img_r = requests.get(url_slike, headers=HEADERS, timeout=20)
                 if img_r.status_code != 200:
                     continue
-                spremi = slika_datoteka if not spremljena_slika else None
-                pov, vj, sm = analiziraj_zonu_opa(img_r.content, spremi_kao=spremi)
-                if spremi:
-                    spremljena_slika = slika_datoteka
+                spremi_m = mala_dat if not spremljena_mala else None
+                spremi_v = velika_dat if not spremljena_velika else None
+                pov, vl, sl, vs, ss = analiziraj_obje_zone(
+                    img_r.content, spremi_malu=spremi_m, spremi_veliku=spremi_v
+                )
+                if spremi_m:
+                    spremljena_mala = mala_dat
+                    spremljena_velika = velika_dat
                 if pov:
                     dan_povoljan = True
-                max_vjetar = max(max_vjetar, vj)
-                max_smjer = max(max_smjer, sm)
+                max_vj_lok = max(max_vj_lok, vl)
+                max_sm_lok = max(max_sm_lok, sl)
+                max_vj_sir = max(max_vj_sir, vs)
+                max_sm_sir = max(max_sm_sir, ss)
 
             status_tekst = "povoljno" if dan_povoljan else "nepovoljno"
             rezultati_dana.append({
@@ -148,9 +165,12 @@ def main():
                 "datum": datum.strftime("%d.%m.%Y."),
                 "povoljno": dan_povoljan,
                 "status_tekst": status_tekst,
-                "vjetar_posto": max_vjetar,
-                "smjer_posto": max_smjer,
-                "slika": spremljena_slika
+                "vjetar_posto": max_vj_lok,
+                "smjer_posto": max_sm_lok,
+                "vjetar_siroko": max_vj_sir,
+                "smjer_siroko": max_sm_sir,
+                "slika": spremljena_mala,
+                "slika_siroko": spremljena_velika
             })
 
         sazetak = ", ".join([f"Preluk {d['dan']} {d['status_tekst']}" for d in rezultati_dana])
