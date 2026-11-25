@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Preluk Vjetar</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 16px; }
+    .okvir { max-width: 440px; margin: 0 auto; }
+    h2 { text-align: center; margin-bottom: 6px; }
+    .sazetak { background: #1e293b; padding: 14px; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 16px; border: 1px solid #334155; }
+    .dan { background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+    .zaglavlje { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .bedz { padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; }
+    .da { background: #16a34a; color: white; }
+    .ne { background: #dc2626; color: white; }
+    img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 8px; }
+    .meta { color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="okvir">
+    <h2>Preluk – 3 dana (06–10h)</h2>
+    <div id="sazetak" class="sazetak">Učitavanje...</div>
+    <div id="lista"></div>
+    <div id="vrijeme" class="meta"></div>
+  </div>
+  <script>
+    fetch('status.json?t=' + Date.now())
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('sazetak').textContent = d.sazetak;
+        document.getElementById('vrijeme').textContent = 'Zadnja provjera: ' + d.azurirano;
+        const lista = document.getElementById('lista');
+        lista.innerHTML = '';
+        (d.dani || []).forEach(dan => {
+          const klasa = dan.povoljno ? 'da' : 'ne';
+          lista.innerHTML += `
+            <div class="dan">
+              <div class="zaglavlje">
+                <strong>Preluk ${dan.dan} (${dan.datum})</strong>
+                <span class="bedz ${klasa}">${dan.status_tekst.toUpperCase()}</span>
+              </div>
+              <div style="font-size:0.85rem;color:#94a3b8;">Vjetar: ${dan.vjetar_posto}% | Smjer S: ${dan.smjer_posto}%</div>
+              ${dan.slika ? `<img src="${dan.slika}?t=${Date.now()}" alt="Zona Opa">` : ''}
+            </div>`;
+        });
+      })
+      .catch(() => {
+        document.getElementById('sazetak').textContent = 'Još nema podataka. Pokreni prvi test u GitHub Actions.';
+      });
+  </script>
+</body>
+</html>
