@@ -15,10 +15,10 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"]
 ZAGREB_TZ = ZoneInfo("Europe/Zagreb")
 
-# Ispod ovog postotka zasjenjenosti oko Opatije (a >= 12%) piše "povoljno ali slabašan vjetar"
+# Ispod ovog postotka zasjenjenosti oko Opatije (a >= 12%) piše "ComsiComsa"
 PRAG_JAKOG_VJETRA = 60.0
 
-# Udio žute/narančaste/crvene u zoni RI–RI_A (Bakarski zaljev) iznad kojeg je "jaka bura"
+# Udio žute/narančaste/crvene u zoni RI–RI_A (Bakarski zaljev) iznad kojeg je "Jaka bura"
 PRAG_JAKE_BURE = 5.0
 
 # Udio zelene/žute/narančaste/crvene u uskoj zoni Punta (Krk) za detekciju bure
@@ -245,10 +245,8 @@ def formatiraj_sate(sati):
     return ", ".join(rasponi)
 
 def kratki_status(status):
-    if status == "povoljno ali slabašan vjetar":
-        return "slabašan"
-    if status == "nema još karata":
-        return "nema karata"
+    if status == "Nema još karata":
+        return "Nema karata"
     return status
 
 def main():
@@ -358,15 +356,15 @@ def main():
             spremljena_velika = spoji_slike_mreza(p["slike"], velika_dat)
 
             if p["obradjeno"] == 0:
-                status_tekst = "nema još karata"
+                status_tekst = "Nema još karata"
             elif p["jaka_bura"]:
-                status_tekst = "jaka bura"
+                status_tekst = "Jaka bura"
             elif p["povoljan"] and p["jak_vjetar"]:
-                status_tekst = "povoljno"
+                status_tekst = "Tramontana"
             elif p["povoljan"]:
-                status_tekst = "povoljno ali slabašan vjetar"
+                status_tekst = "ComsiComsa"
             else:
-                status_tekst = "nepovoljno"
+                status_tekst = "Nula bodova"
 
             rezultati_dana.append({
                 "dan": ime_dana,
@@ -406,23 +404,29 @@ def main():
         )
         sazetak = f"Preluk: {preluk_kratko}"
 
+        ima_tramontane = any(d["status_tekst"] == "Tramontana" for d in rezultati_dana)
         ima_povoljnog = any(d["povoljno"] for d in rezultati_dana)
         ima_punat_bure = len(punat_rezultati) > 0
 
         if ima_punat_bure:
             punat_kratko = "; ".join(
-                [f"{p['dan'][:3].capitalize()} bura {p['sati_tekst']}" for p in punat_rezultati]
+                [f"{p['dan'][:3].capitalize()} Bura {p['sati_tekst']}" for p in punat_rezultati]
             )
             sazetak += f" / Punat: {punat_kratko}"
+        else:
+            sazetak += " / Punat: Nula bodova"
 
         if ima_povoljnog and ima_punat_bure:
-            naslov = "Preluk povoljno + Bura u Puntu"
+            preluk_naslov = "Tramontana" if ima_tramontane else "ComsiComsa"
+            naslov = f"Preluk {preluk_naslov} + Bura u Puntu"
         elif ima_punat_bure:
             naslov = "Bura u Puntu (Krk)"
+        elif ima_tramontane:
+            naslov = "Preluk: Tramontana!"
         elif ima_povoljnog:
-            naslov = "Moguće povoljno vrijeme za surfanje"
+            naslov = "Preluk: ComsiComsa"
         else:
-            naslov = "Preluk prognoza (3 dana)"
+            naslov = "Vjetar Kvarner: Nula bodova"
 
         izlaz = {
             "azurirano": sada.strftime("%d.%m.%Y. %H:%M"),
