@@ -1,8 +1,8 @@
-name: Preluk provjera (11, 17, 22h)
+name: Preluk provjera (svaki sat, push 11/17/22h)
 
 on:
   schedule:
-    - cron: '0 10,16,21 * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -31,9 +31,20 @@ jobs:
       - name: Pošalji OneSignal obavijest
         env:
           ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           python -c '
           import json, os, requests
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          sat = datetime.now(ZoneInfo("Europe/Zagreb")).hour
+          rucno = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+
+          if not rucno and sat not in (11, 17, 22):
+              print(f"Preskačem push obavijest (sada je {sat}h, šalje se u 11, 17 i 22h).")
+              raise SystemExit(0)
+
           d = json.load(open("status.json", encoding="utf-8"))
           key = os.environ.get("ONESIGNAL_API_KEY", "").strip()
           if not key:
