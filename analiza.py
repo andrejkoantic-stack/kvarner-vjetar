@@ -29,6 +29,13 @@ ZONA_PUNAT_BOJA = (0.61, 0.55, 0.675, 0.63)
 ZONA_PUNAT_SMJER = (0.59, 0.53, 0.69, 0.65)
 ZONA_PUNAT_PRIKAZ = (0.52, 0.44, 0.74, 0.70)
 
+def je_dan_za_surfanje(termin):
+    # Ljetno računanje vremena (kraj 3. do kraja 10. mjeseca): 06:00–22:00
+    # Zimsko računanje vremena (kraj 10. do kraja 3. mjeseca): 06:00–18:00
+    je_ljeto = bool(termin.dst())
+    krajnji_sat = 22 if je_ljeto else 18
+    return 6 <= termin.hour <= krajnji_sat
+
 def pronadji_bazu_slika(sesija):
     r = sesija.get(URL, headers=HEADERS, timeout=20)
     r.raise_for_status()
@@ -286,7 +293,7 @@ def main():
         for sat_pomak, url_slike in slike:
             termin = start_modela + timedelta(hours=sat_pomak)
             treba_preluk = (termin.date() in preluk_podaci) and (6 <= termin.hour <= krajnji_sat)
-            treba_punat = termin >= pocetak_buducnosti
+            treba_punat = (termin >= pocetak_buducnosti) and je_dan_za_surfanje(termin)
 
             if not treba_preluk and not treba_punat:
                 continue
@@ -317,7 +324,7 @@ def main():
                 p["max_sm_sir"] = max(p["max_sm_sir"], ss)
                 p["max_bura"] = max(p["max_bura"], udio_bure)
 
-            # 2. Analiza za Punat (svi budući sati u modelu)
+            # 2. Analiza za Punat (samo dnevni sati: zima 06–18h, ljeto 06–22h)
             if treba_punat:
                 bura_punat, udio_p, smjer_p, prikaz_p = analiziraj_punat(img)
                 if bura_punat:
@@ -370,7 +377,7 @@ def main():
                 "slika_siroko": spremljena_velika
             })
 
-        # Sastavi rezultate za Punat (samo dani kad je bura najavljena)
+        # Sastavi rezultate za Punat (samo dani kad je bura najavljena po danu)
         for idx_p, datum in enumerate(sorted(punat_po_danu.keys()), start=1):
             ime_dana = DANI_HR[datum.weekday()]
             pd = punat_po_danu[datum]
