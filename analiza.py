@@ -1,7 +1,9 @@
 import json
 import re
 from datetime import datetime, timezone, timedelta
+from email.utils import parsedate_to_datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 import numpy as np
 import requests
 from PIL import Image
@@ -9,8 +11,8 @@ import cv2
 
 URL = "https://meteo.hr/prognoze.php?section=prognoze_model&param=ala_k&el=web_uv10_SENJ_P"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-NTFY_KANAL = "preluk-vjetar-andrej-99"
 DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"]
+ZAGREB_TZ = ZoneInfo("Europe/Zagreb")
 
 def pronadji_bazu_slika():
     r = requests.get(URL, headers=HEADERS, timeout=20)
@@ -30,6 +32,25 @@ def pronadji_bazu_slika():
                 return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
 
     return []
+
+def odredi_start_modela(prvi_url, sada_utc):
+    ref_utc = sada_utc
+    try:
+        resp = requests.head(prvi_url, headers=HEADERS, timeout=10, allow_redirects=True)
+        lm = resp.headers.get("Last-Modified")
+        if lm:
+            ref_utc = parsedate_to_datetime(lm).astimezone(timezone.utc)
+    except Exception:
+        pass
+
+    if ref_utc.hour < 3:
+        run_utc = (ref_utc - timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
+    elif ref_utc.hour < 15:
+        run_utc = ref_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        run_utc = ref_utc.replace(hour=12, minute=0, second=0, microsecond=0)
+
+    return run_utc.astimezone(ZAGREB_TZ)
 
 def izracunaj_zonu(img, crop_rel, min_strelica, spremi_kao=None):
     w, h = img.size
@@ -94,26 +115,17 @@ def analiziraj_obje_zone(img_bytes, spremi_malu=None, spremi_veliku=None):
     povoljno = (vj_lok >= 12.0) and ok_lok and ok_sir
     return povoljno, vj_lok, sm_lok, vj_sir, sm_sir
 
-def posalji_obavijest(naslov, tekst):
-    try:
-        requests.post(
-            f"https://ntfy.sh/{NTFY_KANAL}",
-            data=tekst.encode("utf-8"),
-            headers={"Title": naslov.encode("utf-8"), "Priority": "default"},
-            timeout=15
-        )
-    except Exception as e:
-        print("Greška slanja obavijesti:", e)
-
 def main():
-    sada = datetime.now(timezone(timedelta(hours=1)))
-    start_sat = 1 if sada.hour < 14 else 13
-    start_modela = sada.replace(hour=start_sat, minute=0, second=0, microsecond=0)
+    sada_utc = datetime.now(timezone.utc)
+    sada = sada_utc.astimezone(ZAGREB_TZ)
 
+    # Prije 10:00 današnje jutro još nije prošlo -> danas, sutra, prekosutra
+    # Od 10:00 nadalje -> sljedeća 3 jutra
+    pomak = 0 if sada.hour < 10 else 1
     ciljani_dani = [
-        (sada + timedelta(days=1)).date(),
-        (sada + timedelta(days=2)).date(),
-        (sada + timedelta(days=3)).date(),
+        (sada + timedelta(days=pomak)).date(),
+        (sada + timedelta(days=pomak + 1)).date(),
+        (sada + timedelta(days=pomak + 2)).date(),
     ]
 
     rezultati_dana = []
@@ -122,6 +134,8 @@ def main():
         slike = pronadji_bazu_slika()
         if not slike:
             raise ValueError("Nisu pronađene ALADIN slike.")
+
+        start_modela = odredi_start_modela(slike[0], sada_utc)
 
         for idx_dan, datum in enumerate(ciljani_dani, start=1):
             ime_dana = DANI_HR[datum.weekday()]
@@ -133,6 +147,7 @@ def main():
                     jutarnje_slike.append((termin, url_slike))
 
             dan_povoljan = False
+            obradjeno_slika = 0
             max_vj_lok = max_sm_lok = 0.0
             max_vj_sir = max_sm_sir = 0.0
             mala_dat = f"dan{idx_dan}.png"
@@ -144,6 +159,7 @@ def main():
                 img_r = requests.get(url_slike, headers=HEADERS, timeout=20)
                 if img_r.status_code != 200:
                     continue
+                obradjeno_slika += 1
                 spremi_m = mala_dat if not spremljena_mala else None
                 spremi_v = velika_dat if not spremljena_velika else None
                 pov, vl, sl, vs, ss = analiziraj_obje_zone(
@@ -159,7 +175,11 @@ def main():
                 max_vj_sir = max(max_vj_sir, vs)
                 max_sm_sir = max(max_sm_sir, ss)
 
-            status_tekst = "povoljno" if dan_povoljan else "nepovoljno"
+            if obradjeno_slika == 0:
+                status_tekst = "nema još karata"
+            else:
+                status_tekst = "povoljno" if dan_povoljan else "nepovoljno"
+
             rezultati_dana.append({
                 "dan": ime_dana,
                 "datum": datum.strftime("%d.%m.%Y."),
@@ -177,10 +197,9 @@ def main():
         ima_povoljnog = any(d["povoljno"] for d in rezultati_dana)
         naslov = "Moguće povoljno vrijeme za surfanje" if ima_povoljnog else "Preluk prognoza (3 dana)"
 
-        posalji_obavijest(naslov, sazetak)
-
         izlaz = {
             "azurirano": sada.strftime("%d.%m.%Y. %H:%M"),
+            "start_modela": start_modela.strftime("%d.%m.%Y. %H:%M"),
             "pronadjeno_slika": len(slike),
             "primjer_url": slike[0],
             "naslov": naslov,
