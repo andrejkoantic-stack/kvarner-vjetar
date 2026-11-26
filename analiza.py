@@ -15,7 +15,7 @@ DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "
 ZAGREB_TZ = ZoneInfo("Europe/Zagreb")
 
 # Ispod ovog postotka zasjenjenosti oko Opatije (a >= 12%) piše "povoljno ali slabašan vjetar"
-PRAG_JAKOG_VJETRA = 35.0
+PRAG_JAKOG_VJETRA = 60.0
 
 def pronadji_bazu_slika():
     r = requests.get(URL, headers=HEADERS, timeout=20)
