@@ -14,6 +14,9 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 DANI_HR = ["ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota", "nedjelja"]
 ZAGREB_TZ = ZoneInfo("Europe/Zagreb")
 
+# Ispod ovog postotka zasjenjenosti oko Opatije (a >= 12%) piše "povoljno ali slabašan vjetar"
+PRAG_JAKOG_VJETRA = 35.0
+
 def pronadji_bazu_slika():
     r = requests.get(URL, headers=HEADERS, timeout=20)
     r.raise_for_status()
@@ -147,6 +150,7 @@ def main():
                     jutarnje_slike.append((termin, url_slike))
 
             dan_povoljan = False
+            dan_jak_vjetar = False
             obradjeno_slika = 0
             max_vj_lok = max_sm_lok = 0.0
             max_vj_sir = max_sm_sir = 0.0
@@ -170,6 +174,8 @@ def main():
                     spremljena_velika = velika_dat
                 if pov:
                     dan_povoljan = True
+                    if vl >= PRAG_JAKOG_VJETRA:
+                        dan_jak_vjetar = True
                 max_vj_lok = max(max_vj_lok, vl)
                 max_sm_lok = max(max_sm_lok, sl)
                 max_vj_sir = max(max_vj_sir, vs)
@@ -177,8 +183,12 @@ def main():
 
             if obradjeno_slika == 0:
                 status_tekst = "nema još karata"
+            elif dan_povoljan and dan_jak_vjetar:
+                status_tekst = "povoljno"
+            elif dan_povoljan:
+                status_tekst = "povoljno ali slabašan vjetar"
             else:
-                status_tekst = "povoljno" if dan_povoljan else "nepovoljno"
+                status_tekst = "nepovoljno"
 
             rezultati_dana.append({
                 "dan": ime_dana,
