@@ -69,13 +69,19 @@
     h3 { text-align: center; margin: 22px 0 12px; color: #facc15; font-size: 1.15rem; }
     .gumb { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-bottom: 6px; cursor: pointer; }
     #push-status { text-align: center; font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; min-height: 18px; }
-    .sazetak { background: #1e293b; padding: 14px; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 16px; border: 1px solid #334155; }
+    .sazetak { background: #1e293b; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
+    .tablica { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .tablica th { text-align: left; color: #94a3b8; font-size: 0.78rem; letter-spacing: 0.04em; padding-bottom: 8px; border-bottom: 1px solid #334155; }
+    .tablica td { padding: 7px 4px 7px 0; border-bottom: 1px solid #1e293b; white-space: nowrap; }
+    .tablica tr:last-child td { border-bottom: none; padding-bottom: 2px; }
+    .dan-ime { font-weight: 600; text-transform: capitalize; }
+    .nema { color: #64748b; }
     .dan { background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
     .zaglavlje { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
     .bedz { padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; text-align: center; }
     .da { background: #16a34a; color: white; }
     .ne { background: #dc2626; color: white; }
-    .bura { background: #ea580c; color: white; }
+    .bura { background: #16a34a; color: white; }
     .oznaka { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; }
     .prazno { background: #1e293b; border-radius: 12px; padding: 14px; text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 14px; }
     img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; }
@@ -96,16 +102,73 @@
     <div id="vrijeme" class="meta"></div>
   </div>
   <script>
+    function prelukCelija(dan) {
+      if (!dan) return '<span class="nema">—</span>';
+      const st = (dan.status_tekst || '').toLowerCase();
+      if (st === 'povoljno') return '🟢 Povoljno';
+      if (st.includes('slabašan')) return '🟡 Slabašan';
+      if (st.includes('bura')) return '🔴 Jaka bura';
+      if (st === 'nepovoljno') return '🔴 Nepovoljno';
+      return '⚪ Nema karata';
+    }
+
+    function punatCelija(p) {
+      if (!p) return '<span class="nema">—</span>';
+      return `🟢 bura ${p.sati_tekst}`;
+    }
+
     fetch('status.json?t=' + Date.now())
       .then(r => r.json())
       .then(d => {
         const t = Date.now();
-        document.getElementById('sazetak').textContent = d.sazetak;
         document.getElementById('vrijeme').textContent = 'Zadnja provjera: ' + d.azurirano;
+
+        const prelukDani = d.dani || [];
+        const punatDani = d.punat_dani || [];
+
+        const punatMapa = {};
+        punatDani.forEach(p => { punatMapa[p.datum] = p; });
+
+        const prelukMapa = {};
+        prelukDani.forEach(x => { prelukMapa[x.datum] = x; });
+
+        const sviDatumi = [];
+        prelukDani.forEach(x => {
+          if (!sviDatumi.some(s => s.datum === x.datum)) sviDatumi.push({ datum: x.datum, dan: x.dan });
+        });
+        punatDani.forEach(p => {
+          if (!sviDatumi.some(s => s.datum === p.datum)) sviDatumi.push({ datum: p.datum, dan: p.dan });
+        });
+
+        const sazetakEl = document.getElementById('sazetak');
+        if (sviDatumi.length === 0) {
+          sazetakEl.textContent = d.sazetak || 'Nema podataka.';
+        } else {
+          let redovi = '';
+          sviDatumi.forEach(stavka => {
+            redovi += `
+              <tr>
+                <td class="dan-ime">${stavka.dan}</td>
+                <td>${prelukCelija(prelukMapa[stavka.datum])}</td>
+                <td>${punatCelija(punatMapa[stavka.datum])}</td>
+              </tr>`;
+          });
+          sazetakEl.innerHTML = `
+            <table class="tablica">
+              <thead>
+                <tr>
+                  <th>DAN</th>
+                  <th>PRELUK</th>
+                  <th>PUNAT</th>
+                </tr>
+              </thead>
+              <tbody>${redovi}</tbody>
+            </table>`;
+        }
 
         const lista = document.getElementById('lista');
         lista.innerHTML = '';
-        (d.dani || []).forEach(dan => {
+        prelukDani.forEach(dan => {
           const klasa = dan.povoljno ? 'da' : 'ne';
           lista.innerHTML += `
             <div class="dan">
@@ -122,18 +185,17 @@
 
         const punatLista = document.getElementById('punat-lista');
         punatLista.innerHTML = '';
-        const punatDani = d.punat_dani || [];
         if (punatDani.length === 0) {
-          punatLista.innerHTML = '<div class="prazno">Nema najavljene jake bure u Puntu u sljedeća 3 dana.</div>';
+          punatLista.innerHTML = '<div class="prazno">Nema najavljene bure u Puntu u sljedeća 3 dana.</div>';
         } else {
           punatDani.forEach(p => {
             punatLista.innerHTML += `
               <div class="dan">
                 <div class="zaglavlje">
                   <strong>Punat ${p.dan} (${p.datum})</strong>
-                  <span class="bedz bura">BURA</span>
+                  <span class="bedz bura">BURA ${p.sati_tekst.toUpperCase()}</span>
                 </div>
-                <div class="oznaka">Termini: ${p.sati_tekst} | Jačina (žuto+): ${p.bura_posto}% | Smjer S: ${p.smjer_posto}%</div>
+                <div class="oznaka">Termini: ${p.sati_tekst} | Jačina: ${p.bura_posto}% | Smjer S: ${p.smjer_posto}%</div>
                 ${p.slika ? `<img src="${p.slika}?t=${t}" alt="Punat bura">` : ''}
               </div>`;
           });
