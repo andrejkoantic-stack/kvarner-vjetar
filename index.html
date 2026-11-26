@@ -61,14 +61,29 @@
         }
       });
     }
+
+    function prebaciInfo() {
+      const box = document.getElementById('info-box');
+      const gumb = document.getElementById('info-gumb');
+      const otvoren = box.style.display === 'block';
+      box.style.display = otvoren ? 'none' : 'block';
+      gumb.textContent = otvoren ? 'ℹ️ Kako se računa prognoza?' : '✖️ Zatvori objašnjenje';
+    }
   </script>
   <style>
     body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 16px; }
     .okvir { max-width: 440px; margin: 0 auto; }
-    h2 { text-align: center; margin-bottom: 6px; }
+    h2 { text-align: center; margin: 4px 0 4px; font-size: 1.35rem; }
     h3 { text-align: center; margin: 22px 0 12px; color: #facc15; font-size: 1.15rem; }
+    .meta { color: #94a3b8; font-size: 0.82rem; text-align: center; margin-bottom: 12px; }
     .gumb { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-bottom: 6px; cursor: pointer; }
-    #push-status { text-align: center; font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; min-height: 18px; }
+    .gumb-info { width: 100%; padding: 9px; background: #1e293b; color: #cbd5e1; border: 1px solid #334155; border-radius: 10px; font-weight: 600; font-size: 0.88rem; margin-bottom: 12px; cursor: pointer; }
+    .info-box { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 0.85rem; line-height: 1.45; color: #cbd5e1; }
+    .info-box h4 { margin: 0 0 6px; color: #facc15; font-size: 0.92rem; }
+    .info-box ul { margin: 0 0 12px; padding-left: 18px; }
+    .info-box ul:last-child { margin-bottom: 0; }
+    .info-box li { margin-bottom: 5px; }
+    #push-status { text-align: center; font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; min-height: 18px; }
     .sazetak { background: #1e293b; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
     .tablica { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
     .tablica th { text-align: left; color: #94a3b8; font-size: 0.78rem; letter-spacing: 0.04em; padding-bottom: 8px; border-bottom: 1px solid #334155; }
@@ -80,41 +95,67 @@
     .zaglavlje { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
     .bedz { padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; text-align: center; }
     .da { background: #16a34a; color: white; }
+    .comsicomsa { background: #ea580c; color: white; }
     .ne { background: #dc2626; color: white; }
     .bura { background: #16a34a; color: white; }
     .oznaka { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; }
-    .prazno { background: #1e293b; border-radius: 12px; padding: 14px; text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 14px; }
     img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; }
-    .meta { color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 10px; }
+    .comic-slika { margin-top: 18px; margin-bottom: 8px; border-radius: 14px; border: 2px solid #334155; }
   </style>
 </head>
 <body>
   <div class="okvir">
-    <h2>Preluk – 3 dana (06–10h)</h2>
+    <h2>Vjetar Kvarner Surf/Foil</h2>
+    <div id="vrijeme" class="meta">Učitavanje...</div>
+
     <button class="gumb" onclick="ukljuciObavijesti()">Uključi Push obavijesti</button>
     <div id="push-status"></div>
+
+    <button id="info-gumb" class="gumb-info" onclick="prebaciInfo()">ℹ️ Kako se računa prognoza?</button>
+    <div id="info-box" class="info-box">
+      <h4>Preluk (jutarnji sati 06–10h)</h4>
+      <ul>
+        <li>🟢 <strong>Tramontana:</strong> Sjeverni smjer vjetra na Preluku i širem Kvarneru, dobra jačina oko Opatije (≥ 60%) i bez jake bure u Bakarskom zaljevu.</li>
+        <li>🟠 <strong>ComsiComsa:</strong> Dobar sjeverni smjer bez jake bure, ali slabija pokrivenost vjetrom (12% – 60%).</li>
+        <li>🔴 <strong>Jaka bura:</strong> Žuta, narančasta ili crvena zona (≥ 5%) u Bakarskom zaljevu (RI – RI_A).</li>
+        <li>🔴 <strong>Nula bodova:</strong> Premalo vjetra (&lt; 12%) ili nepovoljan smjer (nije sjeverni).</li>
+      </ul>
+      <h4>Punat – Krk (zima 06–18h, ljeto 06–22h)</h4>
+      <ul>
+        <li>🟢 <strong>Bura:</strong> Zelena, žuta, narančasta ili crvena boja vjetra (≥ 8%) u uskoj zoni Punta uz sjeverni smjer (SZ, S, SI).</li>
+        <li>🔴 <strong>Nula bodova:</strong> Nema bure u samom Puntu u dnevnim satima (Baška i ostatak Krka se ne računaju).</li>
+      </ul>
+    </div>
+
     <div id="sazetak" class="sazetak">Učitavanje...</div>
     <div id="lista"></div>
 
     <h3>Bura – Punat (Krk)</h3>
     <div id="punat-lista"></div>
 
-    <div id="vrijeme" class="meta"></div>
+    <img src="surf_comic.jpg" alt="Vjetar Kvarner Surf/Foil" class="comic-slika" onerror="this.style.display='none'">
   </div>
   <script>
     function prelukCelija(dan) {
       if (!dan) return '<span class="nema">—</span>';
       const st = (dan.status_tekst || '').toLowerCase();
-      if (st === 'povoljno') return '🟢 Povoljno';
-      if (st.includes('slabašan')) return '🟡 Slabašan';
+      if (st === 'tramontana' || st === 'povoljno') return '🟢 Tramontana';
+      if (st === 'comsicomsa' || st.includes('slabašan')) return '🟠 ComsiComsa';
       if (st.includes('bura')) return '🔴 Jaka bura';
-      if (st === 'nepovoljno') return '🔴 Nepovoljno';
+      if (st === 'nula bodova' || st === 'nepovoljno') return '🔴 Nula bodova';
       return '⚪ Nema karata';
     }
 
+    function prelukKlasa(dan) {
+      const st = (dan.status_tekst || '').toLowerCase();
+      if (st === 'tramontana' || st === 'povoljno') return 'da';
+      if (st === 'comsicomsa' || st.includes('slabašan')) return 'comsicomsa';
+      return 'ne';
+    }
+
     function punatCelija(p) {
-      if (!p) return '<span class="nema">—</span>';
-      return `🟢 bura ${p.sati_tekst}`;
+      if (!p) return '🔴 Nula bodova';
+      return `🟢 Bura ${p.sati_tekst}`;
     }
 
     fetch('status.json?t=' + Date.now())
@@ -169,7 +210,7 @@
         const lista = document.getElementById('lista');
         lista.innerHTML = '';
         prelukDani.forEach(dan => {
-          const klasa = dan.povoljno ? 'da' : 'ne';
+          const klasa = prelukKlasa(dan);
           lista.innerHTML += `
             <div class="dan">
               <div class="zaglavlje">
@@ -186,7 +227,14 @@
         const punatLista = document.getElementById('punat-lista');
         punatLista.innerHTML = '';
         if (punatDani.length === 0) {
-          punatLista.innerHTML = '<div class="prazno">Nema najavljene bure u Puntu u sljedeća 3 dana.</div>';
+          punatLista.innerHTML = `
+            <div class="dan">
+              <div class="zaglavlje">
+                <strong>Punat (sljedeća 3 dana)</strong>
+                <span class="bedz ne">NULA BODOVA</span>
+              </div>
+              <div class="oznaka">Nema najavljene bure u Puntu u dnevnim satima.</div>
+            </div>`;
         } else {
           punatDani.forEach(p => {
             punatLista.innerHTML += `
