@@ -81,7 +81,6 @@
     .info-box { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 0.85rem; line-height: 1.45; color: #cbd5e1; }
     .info-box h4 { margin: 0 0 6px; color: #facc15; font-size: 0.92rem; }
     .info-box ul { margin: 0 0 12px; padding-left: 18px; }
-    .info-box ul:last-child { margin-bottom: 0; }
     .info-box li { margin-bottom: 5px; }
     #push-status { text-align: center; font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; min-height: 18px; }
     .sazetak { background: #1e293b; padding: 12px 14px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
@@ -100,7 +99,7 @@
     .bura { background: #16a34a; color: white; }
     .oznaka { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; }
     img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; }
-    .comic-slika { margin-top: 18px; margin-bottom: 8px; border-radius: 14px; border: 2px solid #334155; }
+    .comic-slika { margin-top: 10px; margin-bottom: 2px; border-radius: 10px; border: 1px solid #334155; }
   </style>
 </head>
 <body>
@@ -125,6 +124,12 @@
         <li>🟢 <strong>Bura:</strong> Zelena, žuta, narančasta ili crvena boja vjetra (≥ 8%) u uskoj zoni Punta uz sjeverni smjer (SZ, S, SI).</li>
         <li>🔴 <strong>Nula bodova:</strong> Nema bure u samom Puntu u dnevnim satima (Baška i ostatak Krka se ne računaju).</li>
       </ul>
+      <h4>Osvježavanje i Push obavijesti</h4>
+      <ul>
+        <li>🔄 <strong>Skeniranje:</strong> Sustav automatski provjerava nove DHMZ ALADIN karte <strong>svakih sat vremena</strong>, pa aplikacija uvijek prikazuje najnovije stanje.</li>
+        <li>🔔 <strong>Push obavijesti:</strong> Šalju se 3 puta dnevno u <strong>11:00</strong>, <strong>17:00</strong> i <strong>22:00</strong> sata.</li>
+      </ul>
+      <img src="surf_comic.jpg" alt="Vjetar Kvarner Surf/Foil" class="comic-slika" onerror="this.style.display='none'">
     </div>
 
     <div id="sazetak" class="sazetak">Učitavanje...</div>
@@ -132,8 +137,6 @@
 
     <h3>Bura – Punat (Krk)</h3>
     <div id="punat-lista"></div>
-
-    <img src="surf_comic.JPG" alt="Vjetar Kvarner Surf/Foil" class="comic-slika" onerror="this.style.display='none'">
   </div>
   <script>
     function prelukCelija(dan) {
