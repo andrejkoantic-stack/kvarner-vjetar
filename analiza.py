@@ -65,14 +65,14 @@ def odredi_start_modela(prvi_url, sada_utc):
 
     return run_utc.astimezone(ZAGREB_TZ)
 
-def spoji_slike_mreza(stavke, izlazna_datoteka, sirina_kartice=160):
+def spoji_slike_mreza(stavke, izlazna_datoteka, sirina_kartice=145):
     if not stavke:
         return ""
 
     prva = stavke[0][1]
     visina_kartice = max(1, int(sirina_kartice * prva.height / prva.width))
-    visina_naslova = 20
-    razmak = 6
+    visina_naslova = 18
+    razmak = 5
 
     stupaca = 2
     redaka = math.ceil(len(stavke) / stupaca)
@@ -160,19 +160,19 @@ def izracunaj_zonu(img, crop_rel, min_strelica):
 def analiziraj_obje_zone(img_bytes):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
 
-    # 1. Mala lokalna zona (Opa / Preluk)
-    ok_lok, vj_lok, sm_lok, zona_lok = izracunaj_zonu(
+    # 1. Mala lokalna zona (Opa / Preluk) — koristi se za izračun
+    ok_lok, vj_lok, sm_lok, _ = izracunaj_zonu(
         img, (0.48, 0.33, 0.60, 0.45), min_strelica=3
     )
 
-    # 2. Velika šira zona (Kvarner: Učka, Opa, RI, Labin, Cres, Krk)
+    # 2. Velika šira zona (Kvarner: Učka, Opa, RI, Labin, Cres, Krk) — izračun + prikaz
     ok_sir, vj_sir, sm_sir, zona_sir = izracunaj_zonu(
         img, (0.38, 0.28, 0.68, 0.68), min_strelica=5
     )
 
     # Povoljno samo ako ima vjetra i OBJE zone pokazuju sjeverni smjer
     povoljno = (vj_lok >= 12.0) and ok_lok and ok_sir
-    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir, zona_lok, zona_sir
+    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir, zona_sir
 
 def main():
     sada_utc = datetime.now(timezone.utc)
@@ -211,9 +211,7 @@ def main():
             obradjeno_slika = 0
             max_vj_lok = max_sm_lok = 0.0
             max_vj_sir = max_sm_sir = 0.0
-            mala_dat = f"dan{idx_dan}.png"
             velika_dat = f"dan{idx_dan}_siroko.png"
-            male_za_spajanje = []
             velike_za_spajanje = []
 
             for termin, url_slike in jutarnje_slike:
@@ -221,10 +219,9 @@ def main():
                 if img_r.status_code != 200:
                     continue
                 obradjeno_slika += 1
-                pov, vl, sl, vs, ss, z_lok, z_sir = analiziraj_obje_zone(img_r.content)
+                pov, vl, sl, vs, ss, z_sir = analiziraj_obje_zone(img_r.content)
 
                 oznaka = termin.strftime("%H:%M")
-                male_za_spajanje.append((oznaka, z_lok))
                 velike_za_spajanje.append((oznaka, z_sir))
 
                 if pov:
@@ -236,7 +233,6 @@ def main():
                 max_vj_sir = max(max_vj_sir, vs)
                 max_sm_sir = max(max_sm_sir, ss)
 
-            spremljena_mala = spoji_slike_mreza(male_za_spajanje, mala_dat)
             spremljena_velika = spoji_slike_mreza(velike_za_spajanje, velika_dat)
 
             if obradjeno_slika == 0:
@@ -257,7 +253,7 @@ def main():
                 "smjer_posto": max_sm_lok,
                 "vjetar_siroko": max_vj_sir,
                 "smjer_siroko": max_sm_sir,
-                "slika": spremljena_mala,
+                "slika": "",
                 "slika_siroko": spremljena_velika
             })
 
