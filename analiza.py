@@ -400,20 +400,20 @@ def main():
                 "slika": spremljena_punat
             })
 
-        # Kratki sažetak za push obavijest (svaki dan u novom redu)
-        preluk_kratko = ",\n".join(
+        # Kratki sažetak za push obavijest u jednom redu
+        preluk_kratko = "; ".join(
             [f"{d['dan'][:3].capitalize()} {kratki_status(d['status_tekst'])}" for d in rezultati_dana]
         )
-        sazetak = f"Preluk:\n{preluk_kratko}"
+        sazetak = f"Preluk: {preluk_kratko}"
 
         ima_povoljnog = any(d["povoljno"] for d in rezultati_dana)
         ima_punat_bure = len(punat_rezultati) > 0
 
         if ima_punat_bure:
-            punat_kratko = ",\n".join(
+            punat_kratko = "; ".join(
                 [f"{p['dan'][:3].capitalize()} bura {p['sati_tekst']}" for p in punat_rezultati]
             )
-            sazetak += f"\n\nPunat:\n{punat_kratko}"
+            sazetak += f" / Punat: {punat_kratko}"
 
         if ima_povoljnog and ima_punat_bure:
             naslov = "Preluk povoljno + Bura u Puntu"
