@@ -1,5 +1,5 @@
 {
-  "azurirano": "26.11.2026. 02:49",
+  "azurirano": "26.11.2026. 02:57",
   "start_modela": "25.11.2026. 19:00",
   "korak_sati": 1,
   "pronadjeno_slika": 72,
@@ -16,7 +16,7 @@
       "smjer_posto": 33.3,
       "vjetar_siroko": 82.0,
       "smjer_siroko": 10.8,
-      "slika": "dan1.png",
+      "slika": "",
       "slika_siroko": "dan1_siroko.png"
     },
     {
@@ -28,7 +28,7 @@
       "smjer_posto": 90.9,
       "vjetar_siroko": 60.7,
       "smjer_siroko": 86.9,
-      "slika": "dan2.png",
+      "slika": "",
       "slika_siroko": "dan2_siroko.png"
     },
     {
@@ -40,7 +40,7 @@
       "smjer_posto": 91.3,
       "vjetar_siroko": 79.3,
       "smjer_siroko": 93.2,
-      "slika": "dan3.png",
+      "slika": "",
       "slika_siroko": "dan3_siroko.png"
     }
   ]
