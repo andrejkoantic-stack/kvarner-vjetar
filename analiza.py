@@ -18,7 +18,7 @@ ZAGREB_TZ = ZoneInfo("Europe/Zagreb")
 # Ispod ovog postotka zasjenjenosti oko Opatije (a >= 12%) piše "povoljno ali slabašan vjetar"
 PRAG_JAKOG_VJETRA = 60.0
 
-# Udio žute/narančaste/crvene u zoni RI–RI_A (Bakarski zaljev) iznad kojeg je "nepovoljno (jaka bura)"
+# Udio žute/narančaste/crvene u zoni RI–RI_A (Bakarski zaljev) iznad kojeg je "jaka bura"
 PRAG_JAKE_BURE = 5.0
 
 def pronadji_bazu_slika():
@@ -103,4 +103,25 @@ def spoji_slike_mreza(stavke, izlazna_datoteka, sirina_kartice=145):
         smanjena = slika.resize((sirina_kartice, visina_kartice), Image.Resampling.LANCZOS)
         platno.paste(smanjena, (x, y + visina_naslova))
 
-        bbox = crtanje.textbbox((0, 0), oznaka_sata, font
+        bbox = crtanje.textbbox((0, 0), oznaka_sata, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        crtanje.text(
+            (x + (sirina_kartice - tw) // 2, y + (visina_naslova - th) // 2 - 1),
+            oznaka_sata,
+            fill=(226, 232, 240),
+            font=font,
+        )
+
+    platno.save(izlazna_datoteka)
+    return izlazna_datoteka
+
+def izracunaj_zonu(img, crop_rel, min_strelica):
+    w, h = img.size
+    x1, y1, x2, y2 = crop_rel
+    zona = img.crop((int(w * x1), int(h * y1), int(w * x2), int(h * y2)))
+
+    arr = np.array(zona)
+    hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
+
+    maska_boje = (hsv[:, :, 1] > 55) & (hsv[:, :, 2] > 75)
