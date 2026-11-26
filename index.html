@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="manifest" href="manifest.json">
-  <title>Preluk Vjetar</title>
+  <title>Preluk & Punat Vjetar</title>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -66,15 +66,18 @@
     body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 16px; }
     .okvir { max-width: 440px; margin: 0 auto; }
     h2 { text-align: center; margin-bottom: 6px; }
+    h3 { text-align: center; margin: 22px 0 12px; color: #facc15; font-size: 1.15rem; }
     .gumb { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; margin-bottom: 6px; cursor: pointer; }
     #push-status { text-align: center; font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; min-height: 18px; }
     .sazetak { background: #1e293b; padding: 14px; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 16px; border: 1px solid #334155; }
     .dan { background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-    .zaglavlje { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .bedz { padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; }
+    .zaglavlje { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .bedz { padding: 4px 10px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; text-align: center; }
     .da { background: #16a34a; color: white; }
     .ne { background: #dc2626; color: white; }
+    .bura { background: #ea580c; color: white; }
     .oznaka { font-size: 0.85rem; color: #94a3b8; margin-top: 10px; }
+    .prazno { background: #1e293b; border-radius: 12px; padding: 14px; text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 14px; }
     img { width: 100%; border-radius: 8px; border: 1px solid #334155; margin-top: 6px; }
     .meta { color: #94a3b8; font-size: 0.85rem; text-align: center; margin-top: 10px; }
   </style>
@@ -86,19 +89,24 @@
     <div id="push-status"></div>
     <div id="sazetak" class="sazetak">Učitavanje...</div>
     <div id="lista"></div>
+
+    <h3>Bura – Punat (Krk)</h3>
+    <div id="punat-lista"></div>
+
     <div id="vrijeme" class="meta"></div>
   </div>
   <script>
     fetch('status.json?t=' + Date.now())
       .then(r => r.json())
       .then(d => {
+        const t = Date.now();
         document.getElementById('sazetak').textContent = d.sazetak;
         document.getElementById('vrijeme').textContent = 'Zadnja provjera: ' + d.azurirano;
+
         const lista = document.getElementById('lista');
         lista.innerHTML = '';
         (d.dani || []).forEach(dan => {
           const klasa = dan.povoljno ? 'da' : 'ne';
-          const t = Date.now();
           lista.innerHTML += `
             <div class="dan">
               <div class="zaglavlje">
@@ -111,6 +119,25 @@
               ${dan.slika_siroko ? `<img src="${dan.slika_siroko}?t=${t}" alt="Šire Kvarner">` : ''}
             </div>`;
         });
+
+        const punatLista = document.getElementById('punat-lista');
+        punatLista.innerHTML = '';
+        const punatDani = d.punat_dani || [];
+        if (punatDani.length === 0) {
+          punatLista.innerHTML = '<div class="prazno">Nema najavljene jake bure u Puntu u sljedeća 3 dana.</div>';
+        } else {
+          punatDani.forEach(p => {
+            punatLista.innerHTML += `
+              <div class="dan">
+                <div class="zaglavlje">
+                  <strong>Punat ${p.dan} (${p.datum})</strong>
+                  <span class="bedz bura">BURA</span>
+                </div>
+                <div class="oznaka">Termini: ${p.sati_tekst} | Jačina (žuto+): ${p.bura_posto}% | Smjer S: ${p.smjer_posto}%</div>
+                ${p.slika ? `<img src="${p.slika}?t=${t}" alt="Punat bura">` : ''}
+              </div>`;
+          });
+        }
       })
       .catch(() => {
         document.getElementById('sazetak').textContent = 'Još nema podataka. Pokreni prvi test u GitHub Actions.';
