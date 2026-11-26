@@ -21,7 +21,7 @@ PRAG_JAKOG_VJETRA = 60.0
 # Udio žute/narančaste/crvene u zoni RI–RI_A (Bakarski zaljev) iznad kojeg je "jaka bura"
 PRAG_JAKE_BURE = 5.0
 
-# Udio žute/narančaste/crvene u uskoj zoni Punta (Krk) za detekciju bure
+# Udio zelene/žute/narančaste/crvene u uskoj zoni Punta (Krk) za detekciju bure
 PRAG_BURE_PUNAT = 8.0
 
 # Koordinate za Punat (Krk) — isključuje Bašku i ostatak Krka
@@ -171,7 +171,7 @@ def izracunaj_zonu(img, crop_rel, min_strelica):
 
     return smjer_ok, round(udio_vjetra, 1), round(udio_sjever, 1), zona
 
-def provjeri_boju_bure(img, crop_rel, prag):
+def provjeri_boju_bure(img, crop_rel, prag, ukljuci_zelenu=False):
     w, h = img.size
     x1, y1, x2, y2 = crop_rel
     zona = img.crop((int(w * x1), int(h * y1), int(w * x2), int(h * y2)))
@@ -179,8 +179,13 @@ def provjeri_boju_bure(img, crop_rel, prag):
     arr = np.array(zona)
     hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
 
-    # Žuta, narančasta i crvena boja na DHMZ skali vjetra
-    maska_bura = ((hsv[:, :, 0] <= 35) | (hsv[:, :, 0] >= 160)) & (hsv[:, :, 1] > 100) & (hsv[:, :, 2] > 100)
+    if ukljuci_zelenu:
+        # Bilo kakva zelena, žuta, narančasta i crvena boja na DHMZ skali vjetra
+        maska_bura = ((hsv[:, :, 0] <= 88) | (hsv[:, :, 0] >= 160)) & (hsv[:, :, 1] > 70) & (hsv[:, :, 2] > 75)
+    else:
+        # Samo žuta, narančasta i crvena boja na DHMZ skali vjetra
+        maska_bura = ((hsv[:, :, 0] <= 35) | (hsv[:, :, 0] >= 160)) & (hsv[:, :, 1] > 100) & (hsv[:, :, 2] > 100)
+
     udio_bure = float(np.mean(maska_bura) * 100)
     return udio_bure >= prag, round(udio_bure, 1)
 
@@ -203,8 +208,8 @@ def analiziraj_obje_zone(img):
     return povoljno, vj_lok, sm_lok, vj_sir, sm_sir, jaka_bura, udio_bure, zona_sir
 
 def analiziraj_punat(img):
-    # Boja (min. žuta/narančasta/crvena) strogo u uskoj zoni Punta
-    ima_boju, udio_bure = provjeri_boju_bure(img, ZONA_PUNAT_BOJA, PRAG_BURE_PUNAT)
+    # Boja (bilo kakva zelena, žuta, narančasta ili crvena) strogo u uskoj zoni Punta
+    ima_boju, udio_bure = provjeri_boju_bure(img, ZONA_PUNAT_BOJA, PRAG_BURE_PUNAT, ukljuci_zelenu=True)
     if not ima_boju:
         return False, udio_bure, 0.0, None
 
