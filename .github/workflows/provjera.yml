@@ -24,11 +24,35 @@ jobs:
         run: pip install requests pillow numpy opencv-python-headless
 
       - name: Pokreni analizu za Preluk
-        env:
-          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
         run: |
           python analiza.py
           cat status.json
+
+      - name: Pošalji OneSignal obavijest
+        env:
+          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
+        run: |
+          python -c '
+          import json, os, requests
+          d = json.load(open("status.json", encoding="utf-8"))
+          key = os.environ.get("ONESIGNAL_API_KEY", "").strip()
+          if not key:
+              print("ONESIGNAL_STATUS: NEMA KLJUCA")
+          else:
+              r = requests.post(
+                  "https://api.onesignal.com/notifications",
+                  headers={"Authorization": f"Key {key}", "Content-Type": "application/json; charset=utf-8"},
+                  json={
+                      "app_id": "b0d8dbcf-f719-4876-8bf5-6900a5fc082c",
+                      "included_segments": ["Total Subscriptions"],
+                      "headings": {"en": d.get("naslov", "Preluk vjetar")},
+                      "contents": {"en": d.get("sazetak", "Provjeri prognozu")},
+                      "url": "https://andrejkoantic-stack.github.io/kvarner-vjetar/"
+                  },
+                  timeout=15
+              )
+              print("ONESIGNAL_STATUS:", r.status_code, r.text)
+          '
 
       - name: Spremi rezultate natrag na GitHub
         run: |
@@ -36,5 +60,5 @@ jobs:
           git config user.email "actions@github.com"
           git add status.json
           git add dan*.png 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "Ažuriranje Preluk 3 dana"
+          git diff --staged --quiet || git commit -m "Ažuriraj podatke za Preluk"
           git push
