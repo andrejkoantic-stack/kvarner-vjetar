@@ -1,4 +1,5 @@
 import json
+import math
 import re
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
@@ -6,7 +7,7 @@ from io import BytesIO
 from zoneinfo import ZoneInfo
 import numpy as np
 import requests
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import cv2
 
 URL = "https://meteo.hr/prognoze.php?section=prognoze_model&param=ala_k&el=web_uv10_SENJ_P"
@@ -22,19 +23,30 @@ def pronadji_bazu_slika():
     r.raise_for_status()
     puni = re.findall(r'https?://[^\s"\'<>\\]+web_uv10_SENJ[^\s"\'<>\\]*\.(?:gif|png|jpg)', r.text, re.IGNORECASE)
 
+    kandidati = []
     if puni:
         m = re.match(r'^(https?://.+?_)\d{2}\.(gif|png|jpg)$', puni[0], re.IGNORECASE)
         if m:
-            baza, ext = m.group(1), m.group(2)
-            return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
+            kandidati.append((m.group(1), m.group(2)))
 
     for baza in ("https://prognoza.hr/aladinHR/web_uv10_SENJ_", "https://meteo.hr/aladinHR/web_uv10_SENJ_"):
-        for ext in ("gif", "png"):
-            resp = requests.head(f"{baza}03.{ext}", headers=HEADERS, timeout=10, allow_redirects=True)
-            if resp.status_code == 200:
-                return [f"{baza}{h:02d}.{ext}" for h in range(3, 75, 3)]
+        for ext in ("png", "gif"):
+            if (baza, ext) not in kandidati:
+                kandidati.append((baza, ext))
 
-    return []
+    for baza, ext in kandidati:
+        # Prvo provjeri postoje li satne slike (01, 02...)
+        r1 = requests.head(f"{baza}01.{ext}", headers=HEADERS, timeout=10, allow_redirects=True)
+        r2 = requests.head(f"{baza}02.{ext}", headers=HEADERS, timeout=10, allow_redirects=True)
+        if r1.status_code == 200 and r2.status_code == 200:
+            return [(h, f"{baza}{h:02d}.{ext}") for h in range(1, 73)], 1
+
+        # Rezervno: 3-satne slike (03, 06...)
+        r3 = requests.head(f"{baza}03.{ext}", headers=HEADERS, timeout=10, allow_redirects=True)
+        if r3.status_code == 200:
+            return [(h, f"{baza}{h:02d}.{ext}") for h in range(3, 75, 3)], 3
+
+    return [], 3
 
 def odredi_start_modela(prvi_url, sada_utc):
     ref_utc = sada_utc
@@ -46,21 +58,65 @@ def odredi_start_modela(prvi_url, sada_utc):
     except Exception:
         pass
 
-    if ref_utc.hour < 3:
-        run_utc = (ref_utc - timedelta(days=1)).replace(hour=12, minute=0, second=0, microsecond=0)
-    elif ref_utc.hour < 15:
-        run_utc = ref_utc.replace(hour=0, minute=0, second=0, microsecond=0)
-    else:
-        run_utc = ref_utc.replace(hour=12, minute=0, second=0, microsecond=0)
+    # ALADIN starta svakih 6 sati (00, 06, 12, 18 UTC), a karte izlaze ~2-4h kasnije
+    pomaknuto = ref_utc - timedelta(hours=2)
+    run_sat = (pomaknuto.hour // 6) * 6
+    run_utc = pomaknuto.replace(hour=run_sat, minute=0, second=0, microsecond=0)
 
     return run_utc.astimezone(ZAGREB_TZ)
 
-def izracunaj_zonu(img, crop_rel, min_strelica, spremi_kao=None):
+def spoji_slike_mreza(stavke, izlazna_datoteka, sirina_kartice=160):
+    if not stavke:
+        return ""
+
+    prva = stavke[0][1]
+    visina_kartice = max(1, int(sirina_kartice * prva.height / prva.width))
+    visina_naslova = 20
+    razmak = 6
+
+    stupaca = 2
+    redaka = math.ceil(len(stavke) / stupaca)
+
+    ukupna_sirina = stupaca * sirina_kartice + (stupaca - 1) * razmak
+    ukupna_visina = redaka * (visina_naslova + visina_kartice) + (redaka - 1) * razmak
+
+    platno = Image.new("RGB", (ukupna_sirina, ukupna_visina), (15, 23, 42))
+    crtanje = ImageDraw.Draw(platno)
+    try:
+        font = ImageFont.load_default(size=12)
+    except TypeError:
+        font = ImageFont.load_default()
+
+    for idx, (oznaka_sata, slika) in enumerate(stavke):
+        red = idx // stupaca
+        stupac = idx % stupaca
+
+        if len(stavke) == 1:
+            x = (ukupna_sirina - sirina_kartice) // 2
+        else:
+            x = stupac * (sirina_kartice + razmak)
+        y = red * (visina_naslova + visina_kartice + razmak)
+
+        smanjena = slika.resize((sirina_kartice, visina_kartice), Image.Resampling.LANCZOS)
+        platno.paste(smanjena, (x, y + visina_naslova))
+
+        bbox = crtanje.textbbox((0, 0), oznaka_sata, font=font)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        crtanje.text(
+            (x + (sirina_kartice - tw) // 2, y + (visina_naslova - th) // 2 - 1),
+            oznaka_sata,
+            fill=(226, 232, 240),
+            font=font,
+        )
+
+    platno.save(izlazna_datoteka)
+    return izlazna_datoteka
+
+def izracunaj_zonu(img, crop_rel, min_strelica):
     w, h = img.size
     x1, y1, x2, y2 = crop_rel
     zona = img.crop((int(w * x1), int(h * y1), int(w * x2), int(h * y2)))
-    if spremi_kao:
-        zona.save(spremi_kao)
 
     arr = np.array(zona)
     hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
@@ -99,24 +155,24 @@ def izracunaj_zonu(img, crop_rel, min_strelica, spremi_kao=None):
     udio_sjever = (strelice_sjever / ukupno * 100) if ukupno > 0 else 0.0
     smjer_ok = (strelice_sjever >= min_strelica) and (udio_sjever >= 60.0)
 
-    return smjer_ok, round(udio_vjetra, 1), round(udio_sjever, 1)
+    return smjer_ok, round(udio_vjetra, 1), round(udio_sjever, 1), zona
 
-def analiziraj_obje_zone(img_bytes, spremi_malu=None, spremi_veliku=None):
+def analiziraj_obje_zone(img_bytes):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
 
     # 1. Mala lokalna zona (Opa / Preluk)
-    ok_lok, vj_lok, sm_lok = izracunaj_zonu(
-        img, (0.48, 0.33, 0.60, 0.45), min_strelica=3, spremi_kao=spremi_malu
+    ok_lok, vj_lok, sm_lok, zona_lok = izracunaj_zonu(
+        img, (0.48, 0.33, 0.60, 0.45), min_strelica=3
     )
 
     # 2. Velika šira zona (Kvarner: Učka, Opa, RI, Labin, Cres, Krk)
-    ok_sir, vj_sir, sm_sir = izracunaj_zonu(
-        img, (0.38, 0.28, 0.68, 0.68), min_strelica=5, spremi_kao=spremi_veliku
+    ok_sir, vj_sir, sm_sir, zona_sir = izracunaj_zonu(
+        img, (0.38, 0.28, 0.68, 0.68), min_strelica=5
     )
 
     # Povoljno samo ako ima vjetra i OBJE zone pokazuju sjeverni smjer
     povoljno = (vj_lok >= 12.0) and ok_lok and ok_sir
-    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir
+    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir, zona_lok, zona_sir
 
 def main():
     sada_utc = datetime.now(timezone.utc)
@@ -134,19 +190,20 @@ def main():
     rezultati_dana = []
 
     try:
-        slike = pronadji_bazu_slika()
+        slike, korak = pronadji_bazu_slika()
         if not slike:
             raise ValueError("Nisu pronađene ALADIN slike.")
 
-        start_modela = odredi_start_modela(slike[0], sada_utc)
+        start_modela = odredi_start_modela(slike[0][1], sada_utc)
+        krajnji_sat = 9 if korak == 1 else 10
 
         for idx_dan, datum in enumerate(ciljani_dani, start=1):
             ime_dana = DANI_HR[datum.weekday()]
             jutarnje_slike = []
 
-            for i, url_slike in enumerate(slike, start=1):
-                termin = start_modela + timedelta(hours=i * 3)
-                if termin.date() == datum and 6 <= termin.hour <= 10:
+            for sat_pomak, url_slike in slike:
+                termin = start_modela + timedelta(hours=sat_pomak)
+                if termin.date() == datum and 6 <= termin.hour <= krajnji_sat:
                     jutarnje_slike.append((termin, url_slike))
 
             dan_povoljan = False
@@ -156,22 +213,20 @@ def main():
             max_vj_sir = max_sm_sir = 0.0
             mala_dat = f"dan{idx_dan}.png"
             velika_dat = f"dan{idx_dan}_siroko.png"
-            spremljena_mala = ""
-            spremljena_velika = ""
+            male_za_spajanje = []
+            velike_za_spajanje = []
 
             for termin, url_slike in jutarnje_slike:
                 img_r = requests.get(url_slike, headers=HEADERS, timeout=20)
                 if img_r.status_code != 200:
                     continue
                 obradjeno_slika += 1
-                spremi_m = mala_dat if not spremljena_mala else None
-                spremi_v = velika_dat if not spremljena_velika else None
-                pov, vl, sl, vs, ss = analiziraj_obje_zone(
-                    img_r.content, spremi_malu=spremi_m, spremi_veliku=spremi_v
-                )
-                if spremi_m:
-                    spremljena_mala = mala_dat
-                    spremljena_velika = velika_dat
+                pov, vl, sl, vs, ss, z_lok, z_sir = analiziraj_obje_zone(img_r.content)
+
+                oznaka = termin.strftime("%H:%M")
+                male_za_spajanje.append((oznaka, z_lok))
+                velike_za_spajanje.append((oznaka, z_sir))
+
                 if pov:
                     dan_povoljan = True
                     if vl >= PRAG_JAKOG_VJETRA:
@@ -180,6 +235,9 @@ def main():
                 max_sm_lok = max(max_sm_lok, sl)
                 max_vj_sir = max(max_vj_sir, vs)
                 max_sm_sir = max(max_sm_sir, ss)
+
+            spremljena_mala = spoji_slike_mreza(male_za_spajanje, mala_dat)
+            spremljena_velika = spoji_slike_mreza(velike_za_spajanje, velika_dat)
 
             if obradjeno_slika == 0:
                 status_tekst = "nema još karata"
@@ -210,8 +268,9 @@ def main():
         izlaz = {
             "azurirano": sada.strftime("%d.%m.%Y. %H:%M"),
             "start_modela": start_modela.strftime("%d.%m.%Y. %H:%M"),
+            "korak_sati": korak,
             "pronadjeno_slika": len(slike),
-            "primjer_url": slike[0],
+            "primjer_url": slike[0][1],
             "naslov": naslov,
             "sazetak": sazetak,
             "dani": rezultati_dana
