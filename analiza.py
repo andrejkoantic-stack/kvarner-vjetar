@@ -18,6 +18,9 @@ ZAGREB_TZ = ZoneInfo("Europe/Zagreb")
 # Ispod ovog postotka zasjenjenosti oko Opatije (a >= 12%) piše "povoljno ali slabašan vjetar"
 PRAG_JAKOG_VJETRA = 60.0
 
+# Udio žute/narančaste/crvene u zoni RI–RI_A (Bakarski zaljev) iznad kojeg je "nepovoljno"
+PRAG_JAKE_BURE = 5.0
+
 def pronadji_bazu_slika():
     r = requests.get(URL, headers=HEADERS, timeout=20)
     r.raise_for_status()
@@ -157,6 +160,19 @@ def izracunaj_zonu(img, crop_rel, min_strelica):
 
     return smjer_ok, round(udio_vjetra, 1), round(udio_sjever, 1), zona
 
+def provjeri_jaku_buru(img, crop_rel=(0.58, 0.36, 0.66, 0.45)):
+    w, h = img.size
+    x1, y1, x2, y2 = crop_rel
+    zona = img.crop((int(w * x1), int(h * y1), int(w * x2), int(h * y2)))
+
+    arr = np.array(zona)
+    hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV)
+
+    # Žuta, narančasta i crvena boja na DHMZ skali vjetra
+    maska_bura = ((hsv[:, :, 0] <= 32) | (hsv[:, :, 0] >= 160)) & (hsv[:, :, 1] > 100) & (hsv[:, :, 2] > 100)
+    udio_bure = float(np.mean(maska_bura) * 100)
+    return udio_bure >= PRAG_JAKE_BURE, round(udio_bure, 1)
+
 def analiziraj_obje_zone(img_bytes):
     img = Image.open(BytesIO(img_bytes)).convert("RGB")
 
@@ -170,9 +186,12 @@ def analiziraj_obje_zone(img_bytes):
         img, (0.38, 0.28, 0.68, 0.68), min_strelica=5
     )
 
-    # Povoljno samo ako ima vjetra i OBJE zone pokazuju sjeverni smjer
-    povoljno = (vj_lok >= 12.0) and ok_lok and ok_sir
-    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir, zona_sir
+    # 3. Zona jake bure (Bakarski zaljev / između RI i RI_A)
+    jaka_bura, udio_bure = provjeri_jaku_buru(img)
+
+    # Povoljno samo ako ima vjetra, OBJE zone pokazuju sjeverni smjer i nema jake bure
+    povoljno = (vj_lok >= 12.0) and ok_lok and ok_sir and (not jaka_bura)
+    return povoljno, vj_lok, sm_lok, vj_sir, sm_sir, jaka_bura, udio_bure, zona_sir
 
 def main():
     sada_utc = datetime.now(timezone.utc)
@@ -208,9 +227,11 @@ def main():
 
             dan_povoljan = False
             dan_jak_vjetar = False
+            dan_jaka_bura = False
             obradjeno_slika = 0
             max_vj_lok = max_sm_lok = 0.0
             max_vj_sir = max_sm_sir = 0.0
+            max_bura = 0.0
             velika_dat = f"dan{idx_dan}_siroko.png"
             velike_za_spajanje = []
 
@@ -219,11 +240,13 @@ def main():
                 if img_r.status_code != 200:
                     continue
                 obradjeno_slika += 1
-                pov, vl, sl, vs, ss, z_sir = analiziraj_obje_zone(img_r.content)
+                pov, vl, sl, vs, ss, jaka_bura, udio_bure, z_sir = analiziraj_obje_zone(img_r.content)
 
                 oznaka = termin.strftime("%H:%M")
                 velike_za_spajanje.append((oznaka, z_sir))
 
+                if jaka_bura:
+                    dan_jaka_bura = True
                 if pov:
                     dan_povoljan = True
                     if vl >= PRAG_JAKOG_VJETRA:
@@ -232,11 +255,17 @@ def main():
                 max_sm_lok = max(max_sm_lok, sl)
                 max_vj_sir = max(max_vj_sir, vs)
                 max_sm_sir = max(max_sm_sir, ss)
+                max_bura = max(max_bura, udio_bure)
+
+            if dan_jaka_bura:
+                dan_povoljan = False
 
             spremljena_velika = spoji_slike_mreza(velike_za_spajanje, velika_dat)
 
             if obradjeno_slika == 0:
                 status_tekst = "nema još karata"
+            elif dan_jaka_bura:
+                status_tekst = "nepovoljno"
             elif dan_povoljan and dan_jak_vjetar:
                 status_tekst = "povoljno"
             elif dan_povoljan:
@@ -253,6 +282,7 @@ def main():
                 "smjer_posto": max_sm_lok,
                 "vjetar_siroko": max_vj_sir,
                 "smjer_siroko": max_sm_sir,
+                "jaka_bura_posto": max_bura,
                 "slika": "",
                 "slika_siroko": spremljena_velika
             })
