@@ -233,18 +233,23 @@ def analiziraj_punat(img):
 def formatiraj_sate(sati):
     if not sati:
         return ""
-    if len(sati) <= 4:
-        return ", ".join(f"{h:02d}h" for h in sati)
     rasponi = []
     poc = kraj = sati[0]
     for s in sati[1:]:
         if s == kraj + 1:
             kraj = s
         else:
-            rasponi.append(f"{poc:02d}h" if poc == kraj else f"{poc:02d}–{kraj:02d}h")
+            rasponi.append(f"{poc}h" if poc == kraj else f"{poc}-{kraj}h")
             poc = kraj = s
-    rasponi.append(f"{poc:02d}h" if poc == kraj else f"{poc:02d}–{kraj:02d}h")
+    rasponi.append(f"{poc}h" if poc == kraj else f"{poc}-{kraj}h")
     return ", ".join(rasponi)
+
+def kratki_status(status):
+    if status == "povoljno ali slabašan vjetar":
+        return "slabašan"
+    if status == "nema još karata":
+        return "nema karata"
+    return status
 
 def main():
     sada_utc = datetime.now(timezone.utc)
@@ -395,14 +400,20 @@ def main():
                 "slika": spremljena_punat
             })
 
-        # Sažetak i naslov (Punat se dodaje u obavijest samo ako je bura najavljena)
-        sazetak = ", ".join([f"Preluk {d['dan']} {d['status_tekst']}" for d in rezultati_dana])
+        # Kratki sažetak za push obavijest (svaki dan u novom redu)
+        preluk_kratko = ",\n".join(
+            [f"{d['dan'][:3].capitalize()} {kratki_status(d['status_tekst'])}" for d in rezultati_dana]
+        )
+        sazetak = f"Preluk:\n{preluk_kratko}"
+
         ima_povoljnog = any(d["povoljno"] for d in rezultati_dana)
         ima_punat_bure = len(punat_rezultati) > 0
 
         if ima_punat_bure:
-            punat_opis = ", ".join([f"{p['dan']} ({p['sati_tekst']})" for p in punat_rezultati])
-            sazetak += f" | Bura Punat: {punat_opis}"
+            punat_kratko = ",\n".join(
+                [f"{p['dan'][:3].capitalize()} bura {p['sati_tekst']}" for p in punat_rezultati]
+            )
+            sazetak += f"\n\nPunat:\n{punat_kratko}"
 
         if ima_povoljnog and ima_punat_bure:
             naslov = "Preluk povoljno + Bura u Puntu"
