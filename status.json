@@ -1,11 +1,11 @@
 {
-  "azurirano": "26.11.2026. 13:56",
+  "azurirano": "26.11.2026. 14:03",
   "start_modela": "26.11.2026. 07:00",
   "korak_sati": 1,
   "pronadjeno_slika": 72,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_01.png",
   "naslov": "Moguće povoljno vrijeme za surfanje",
-  "sazetak": "Preluk petak povoljno ali slabašan vjetar, Preluk subota povoljno, Preluk nedjelja povoljno ali slabašan vjetar",
+  "sazetak": "Preluk petak povoljno ali slabašan vjetar, Preluk subota nepovoljno, Preluk nedjelja nepovoljno",
   "dani": [
     {
       "dan": "petak",
@@ -16,30 +16,33 @@
       "smjer_posto": 90.5,
       "vjetar_siroko": 63.2,
       "smjer_siroko": 88.8,
+      "jaka_bura_posto": 0.0,
       "slika": "",
       "slika_siroko": "dan1_siroko.png"
     },
     {
       "dan": "subota",
       "datum": "28.11.2026.",
-      "povoljno": true,
-      "status_tekst": "povoljno",
+      "povoljno": false,
+      "status_tekst": "nepovoljno",
       "vjetar_posto": 67.2,
       "smjer_posto": 91.3,
       "vjetar_siroko": 74.4,
       "smjer_siroko": 90.7,
+      "jaka_bura_posto": 59.4,
       "slika": "",
       "slika_siroko": "dan2_siroko.png"
     },
     {
       "dan": "nedjelja",
       "datum": "29.11.2026.",
-      "povoljno": true,
-      "status_tekst": "povoljno ali slabašan vjetar",
+      "povoljno": false,
+      "status_tekst": "nepovoljno",
       "vjetar_posto": 44.8,
       "smjer_posto": 87.5,
       "vjetar_siroko": 72.0,
       "smjer_siroko": 91.0,
+      "jaka_bura_posto": 58.8,
       "slika": "",
       "slika_siroko": "dan3_siroko.png"
     }
