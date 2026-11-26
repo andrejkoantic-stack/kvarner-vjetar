@@ -1,45 +1,46 @@
 {
-  "azurirano": "26.11.2026. 01:08",
+  "azurirano": "26.11.2026. 01:24",
+  "start_modela": "25.11.2026. 13:00",
   "pronadjeno_slika": 24,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_03.png",
   "naslov": "Moguće povoljno vrijeme za surfanje",
-  "sazetak": "Preluk petak povoljno, Preluk subota povoljno, Preluk nedjelja nepovoljno",
+  "sazetak": "Preluk četvrtak nepovoljno, Preluk petak povoljno, Preluk subota povoljno",
   "dani": [
+    {
+      "dan": "četvrtak",
+      "datum": "26.11.2026.",
+      "povoljno": false,
+      "status_tekst": "nepovoljno",
+      "vjetar_posto": 26.6,
+      "smjer_posto": 23.1,
+      "vjetar_siroko": 40.9,
+      "smjer_siroko": 21.6,
+      "slika": "dan1.png",
+      "slika_siroko": "dan1_siroko.png"
+    },
     {
       "dan": "petak",
       "datum": "27.11.2026.",
       "povoljno": true,
       "status_tekst": "povoljno",
-      "vjetar_posto": 19.4,
-      "smjer_posto": 83.3,
-      "vjetar_siroko": 15.0,
-      "smjer_siroko": 76.6,
-      "slika": "dan1.png",
-      "slika_siroko": "dan1_siroko.png"
+      "vjetar_posto": 37.6,
+      "smjer_posto": 90.0,
+      "vjetar_siroko": 67.8,
+      "smjer_siroko": 88.0,
+      "slika": "dan2.png",
+      "slika_siroko": "dan2_siroko.png"
     },
     {
       "dan": "subota",
       "datum": "28.11.2026.",
       "povoljno": true,
       "status_tekst": "povoljno",
-      "vjetar_posto": 54.2,
-      "smjer_posto": 90.0,
-      "vjetar_siroko": 78.7,
-      "smjer_siroko": 92.0,
-      "slika": "dan2.png",
-      "slika_siroko": "dan2_siroko.png"
-    },
-    {
-      "dan": "nedjelja",
-      "datum": "29.11.2026.",
-      "povoljno": false,
-      "status_tekst": "nepovoljno",
-      "vjetar_posto": 0.0,
-      "smjer_posto": 0.0,
-      "vjetar_siroko": 0.0,
-      "smjer_siroko": 0.0,
-      "slika": "",
-      "slika_siroko": ""
+      "vjetar_posto": 59.4,
+      "smjer_posto": 84.2,
+      "vjetar_siroko": 74.6,
+      "smjer_siroko": 90.1,
+      "slika": "dan3.png",
+      "slika_siroko": "dan3_siroko.png"
     }
   ]
 }
