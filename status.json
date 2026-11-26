@@ -1,11 +1,11 @@
 {
-  "azurirano": "26.11.2026. 15:09",
+  "azurirano": "26.11.2026. 15:45",
   "start_modela": "26.11.2026. 07:00",
   "korak_sati": 1,
   "pronadjeno_slika": 72,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_01.png",
-  "naslov": "Moguće povoljno vrijeme za surfanje",
-  "sazetak": "Preluk petak povoljno ali slabašan vjetar, Preluk subota jaka bura, Preluk nedjelja jaka bura",
+  "naslov": "Preluk povoljno + Bura u Puntu",
+  "sazetak": "Preluk petak povoljno ali slabašan vjetar, Preluk subota jaka bura, Preluk nedjelja jaka bura | Bura Punat: petak (18–23h), subota (00–04h, 19–23h), nedjelja (00h, 01h, 02h)",
   "dani": [
     {
       "dan": "petak",
@@ -45,6 +45,57 @@
       "jaka_bura_posto": 51.7,
       "slika": "",
       "slika_siroko": "dan3_siroko.png"
+    }
+  ],
+  "punat_dani": [
+    {
+      "dan": "petak",
+      "datum": "27.11.2026.",
+      "sati": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "sati_tekst": "18–23h",
+      "bura_posto": 19.5,
+      "smjer_posto": 100.0,
+      "slika": "dan_punat_1.png"
+    },
+    {
+      "dan": "subota",
+      "datum": "28.11.2026.",
+      "sati": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "sati_tekst": "00–04h, 19–23h",
+      "bura_posto": 23.4,
+      "smjer_posto": 100.0,
+      "slika": "dan_punat_2.png"
+    },
+    {
+      "dan": "nedjelja",
+      "datum": "29.11.2026.",
+      "sati": [
+        0,
+        1,
+        2
+      ],
+      "sati_tekst": "00h, 01h, 02h",
+      "bura_posto": 18.2,
+      "smjer_posto": 80.0,
+      "slika": "dan_punat_3.png"
     }
   ]
 }
