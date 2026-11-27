@@ -1,22 +1,22 @@
 {
-  "azurirano": "27.11.2026. 22:44",
-  "start_modela": "27.11.2026. 13:00",
+  "azurirano": "27.11.2026. 23:44",
+  "start_modela": "27.11.2026. 19:00",
   "korak_sati": 1,
   "pronadjeno_slika": 72,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_01.png",
   "naslov": "Bura u Puntu (Krk)",
-  "sazetak": "Preluk: Sub Jaka bura; Ned Jaka bura; Pon Jaka bura / Punat: Sub Bura 6-18h; Ned Bura 6-18h; Pon Bura 6-13h",
+  "sazetak": "Preluk: Sub Jaka bura; Ned Jaka bura; Pon Jaka bura / Punat: Sub Bura 6-18h; Ned Bura 6-18h; Pon Bura 6-18h",
   "dani": [
     {
       "dan": "subota",
       "datum": "28.11.2026.",
       "povoljno": false,
       "status_tekst": "Jaka bura",
-      "vjetar_posto": 63.8,
-      "smjer_posto": 91.3,
-      "vjetar_siroko": 76.1,
-      "smjer_siroko": 88.7,
-      "jaka_bura_posto": 63.8,
+      "vjetar_posto": 65.7,
+      "smjer_posto": 90.5,
+      "vjetar_siroko": 76.0,
+      "smjer_siroko": 89.0,
+      "jaka_bura_posto": 63.4,
       "slika": "",
       "slika_siroko": "dan1_siroko.png"
     },
@@ -25,11 +25,11 @@
       "datum": "29.11.2026.",
       "povoljno": false,
       "status_tekst": "Jaka bura",
-      "vjetar_posto": 48.8,
-      "smjer_posto": 84.2,
+      "vjetar_posto": 47.4,
+      "smjer_posto": 85.7,
       "vjetar_siroko": 73.0,
-      "smjer_siroko": 91.4,
-      "jaka_bura_posto": 58.8,
+      "smjer_siroko": 90.1,
+      "jaka_bura_posto": 57.3,
       "slika": "",
       "slika_siroko": "dan2_siroko.png"
     },
@@ -38,10 +38,10 @@
       "datum": "30.11.2026.",
       "povoljno": false,
       "status_tekst": "Jaka bura",
-      "vjetar_posto": 50.6,
-      "smjer_posto": 85.0,
-      "vjetar_siroko": 75.0,
-      "smjer_siroko": 91.5,
+      "vjetar_posto": 51.6,
+      "smjer_posto": 83.3,
+      "vjetar_siroko": 74.8,
+      "smjer_siroko": 91.1,
       "jaka_bura_posto": 59.9,
       "slika": "",
       "slika_siroko": "dan3_siroko.png"
@@ -67,7 +67,7 @@
         18
       ],
       "sati_tekst": "6-18h",
-      "bura_posto": 80.3,
+      "bura_posto": 77.7,
       "smjer_posto": 100.0,
       "slika": "dan_punat_1.png"
     },
@@ -90,7 +90,7 @@
         18
       ],
       "sati_tekst": "6-18h",
-      "bura_posto": 85.0,
+      "bura_posto": 86.1,
       "smjer_posto": 100.0,
       "slika": "dan_punat_2.png"
     },
@@ -105,10 +105,15 @@
         10,
         11,
         12,
-        13
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
       ],
-      "sati_tekst": "6-13h",
-      "bura_posto": 84.9,
+      "sati_tekst": "6-18h",
+      "bura_posto": 87.8,
       "smjer_posto": 100.0,
       "slika": "dan_punat_3.png"
     }
