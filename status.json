@@ -1,11 +1,11 @@
 {
-  "azurirano": "27.11.2026. 07:55",
+  "azurirano": "27.11.2026. 09:20",
   "start_modela": "27.11.2026. 01:00",
   "korak_sati": 1,
   "pronadjeno_slika": 72,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_01.png",
   "naslov": "Preluk ComsiComsa + Bura u Puntu",
-  "sazetak": "Preluk: Pet ComsiComsa; Sub Jaka bura; Ned Jaka bura / Punat: Pet Bura 7-18h; Sub Bura 6-12h, 14-18h; Ned Bura 6-9h, 11-18h",
+  "sazetak": "Preluk: Pet ComsiComsa; Sub Jaka bura; Ned Jaka bura / Punat: Pet Bura 9-18h; Sub Bura 6-12h, 14-18h; Ned Bura 6-9h, 11-18h",
   "dani": [
     {
       "dan": "petak",
@@ -52,8 +52,6 @@
       "dan": "petak",
       "datum": "27.11.2026.",
       "sati": [
-        7,
-        8,
         9,
         10,
         11,
@@ -65,7 +63,7 @@
         17,
         18
       ],
-      "sati_tekst": "7-18h",
+      "sati_tekst": "9-18h",
       "bura_posto": 69.5,
       "smjer_posto": 100.0,
       "slika": "dan_punat_1.png"
