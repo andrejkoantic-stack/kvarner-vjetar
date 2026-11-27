@@ -1,11 +1,11 @@
 {
-  "azurirano": "27.11.2026. 17:54",
+  "azurirano": "27.11.2026. 18:44",
   "start_modela": "27.11.2026. 13:00",
   "korak_sati": 1,
   "pronadjeno_slika": 72,
   "primjer_url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_01.png",
   "naslov": "Bura u Puntu (Krk)",
-  "sazetak": "Preluk: Sub Jaka bura; Ned Jaka bura; Pon Jaka bura / Punat: Pet Bura 17-18h; Sub Bura 6-18h; Ned Bura 6-18h; Pon Bura 6-13h",
+  "sazetak": "Preluk: Sub Jaka bura; Ned Jaka bura; Pon Jaka bura / Punat: Pet Bura 18h; Sub Bura 6-18h; Ned Bura 6-18h; Pon Bura 6-13h",
   "dani": [
     {
       "dan": "subota",
@@ -52,10 +52,9 @@
       "dan": "petak",
       "datum": "27.11.2026.",
       "sati": [
-        17,
         18
       ],
-      "sati_tekst": "17-18h",
+      "sati_tekst": "18h",
       "bura_posto": 69.8,
       "smjer_posto": 83.3,
       "slika": "dan_punat_1.png"
